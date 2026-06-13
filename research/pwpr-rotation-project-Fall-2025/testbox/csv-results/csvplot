@@ -1,0 +1,227 @@
+#!/usr/bin/env python3
+import argparse
+import sys
+
+import pandas as pd
+import matplotlib.pyplot as plt
+
+import matplotlib
+matplotlib.use('TkAgg')
+
+# Colors for single-plot mode
+COLOR_CYCLE = ["red", "orange", "green", "blue", "violet"]
+
+
+def parse_args():
+    parser = argparse.ArgumentParser(
+        description="Plot selected columns from CSV grouped by 'cmd'."
+    )
+    parser.add_argument(
+        "-i", "--input",
+        required=True,
+        help="Input CSV file."
+    )
+    parser.add_argument(
+        "--xcol",
+        default="eps",
+        help=(
+            "X-axis column (name or 0-based index). "
+            "Use 'rownum' for row number. Default: eps"
+        ),
+    )
+    parser.add_argument(
+        "--ycols",
+        nargs="+",
+        help="Y-axis columns (names or 0-based indices)."
+    )
+    parser.add_argument(
+        "--show-cols",
+        action="store_true",
+        help="Print available columns (with indices) and exit."
+    )
+    parser.add_argument(
+        "--single-plot",
+        action="store_true",  # ✅ FIXED
+        help=(
+            "Plot ALL cmd groups on a single figure using "
+            "red/orange/green/blue/violet."
+        ),
+    )
+
+    # Don’t crash on stray args (e.g. launching via Finder)
+    args, unknown = parser.parse_known_args()
+    if unknown:
+        print("Ignoring unknown arguments:", unknown)
+    return args
+
+
+def resolve_column(spec: str, df: pd.DataFrame, allow_rownum: bool = False) -> str:
+    """
+    Resolve a column specifier to an actual column name in df.
+
+    - If spec == 'rownum' and allow_rownum=True, return 'rownum'.
+    - If spec matches a column name, return it.
+    - Otherwise, interpret spec as a 0-based column index.
+    """
+    spec = spec.strip()
+
+    if allow_rownum and spec == "rownum":
+        return "rownum"
+
+    # Name match
+    if spec in df.columns:
+        return spec
+
+    # Try index
+    try:
+        idx = int(spec)
+    except ValueError:
+        raise KeyError(f"Column '{spec}' not found as name or index.")
+
+    if idx < 0 or idx >= len(df.columns):
+        raise KeyError(
+            f"Column index {idx} out of range [0, {len(df.columns) - 1}]."
+        )
+
+    return df.columns[idx]
+
+
+def main():
+    args = parse_args()
+
+    # --- Read CSV ---
+    try:
+        df = pd.read_csv(args.input)
+    except Exception as e:
+        print(f"Error reading CSV '{args.input}': {e}", file=sys.stderr)
+        sys.exit(1)
+
+    # Strip whitespace from column names
+    df.columns = df.columns.str.strip()
+
+    # Add row number column (0-based)
+    df["rownum"] = range(len(df))
+
+    # --- Show columns and exit, if requested ---
+    if args.show_cols:
+        print("Available columns (index: name):")
+        for i, col in enumerate(df.columns):
+            print(f"  {i}: {col}")
+        sys.exit(0)
+
+    # --- Ensure 'cmd' exists for grouping ---
+    if "cmd" not in df.columns:
+        print("Error: required column 'cmd' not found in CSV.", file=sys.stderr)
+        print("Available columns (index: name):")
+        for i, col in enumerate(df.columns):
+            print(f"  {i}: {col}")
+        sys.exit(1)
+
+    # --- Resolve x-axis column (name/index/rownum) ---
+    try:
+        xcol = resolve_column(args.xcol, df, allow_rownum=True)
+    except KeyError as e:
+        print(f"Error: {e}", file=sys.stderr)
+        print("Available columns (index: name):")
+        for i, col in enumerate(df.columns):
+            print(f"  {i}: {col}")
+        sys.exit(1)
+
+    # --- Determine y columns ---
+    if args.ycols:
+        y_specs = args.ycols
+    else:
+        # If no ycols given, let user choose from numeric columns
+        numeric_cols = df.select_dtypes(include="number").columns.tolist()
+        if xcol in numeric_cols:
+            numeric_cols.remove(xcol)
+
+        if not numeric_cols:
+            print("Error: no numeric columns available for y-axis.", file=sys.stderr)
+            sys.exit(1)
+
+        print("\nNo --ycols specified.")
+        print("Numeric columns available for y-axis (index: name):")
+        for i, c in enumerate(numeric_cols):
+            print(f"  {i}: {c}")
+
+        choice = input("Enter indices of columns to plot (comma separated): ").strip()
+        try:
+            idxs = [int(x) for x in choice.split(",") if x.strip()]
+            # Convert numeric choices to column indices (in df.columns space)
+            y_specs = [str(df.columns.get_loc(numeric_cols[i])) for i in idxs]
+        except Exception as e:
+            print(f"Error parsing indices: {e}", file=sys.stderr)
+            sys.exit(1)
+
+    # Resolve y column specs to actual names
+    ycols = []
+    for spec in y_specs:
+        try:
+            ycols.append(resolve_column(spec, df))
+        except KeyError as e:
+            print(f"Error: {e}", file=sys.stderr)
+            print("Available columns (index: name):")
+            for i, col in enumerate(df.columns):
+                print(f"  {i}: {col}")
+            sys.exit(1)
+
+    # --- Group by cmd ---
+    groups = df.groupby("cmd", sort=False)
+
+    # === SINGLE-PLOT MODE ===
+    if args.single_plot:
+        plt.figure()
+        color_index = 0
+
+        for cmd_value, group in groups:
+            # Sort by x if not rownum
+            if xcol != "rownum":
+                try:
+                    group = group.sort_values(by=xcol)
+                except Exception:
+                    pass
+
+            x = group[xcol]
+
+            for ycol in ycols:
+                color = COLOR_CYCLE[color_index % len(COLOR_CYCLE)]
+                color_index += 1
+                label = f"{cmd_value} : {ycol}"
+                plt.plot(x, group[ycol], marker="o", color=color, label=label)
+
+        plt.title("All cmd groups (single plot)")
+        plt.xlabel(xcol)
+        plt.ylabel(" / ".join(ycols))
+        plt.grid(True)
+        plt.legend()
+        plt.tight_layout()
+        plt.show()
+        return
+
+    # === MULTI-PLOT MODE (one figure per cmd) ===
+    for cmd_value, group in groups:
+        if xcol != "rownum":
+            try:
+                group = group.sort_values(by=xcol)
+            except Exception:
+                pass
+
+        x = group[xcol]
+
+        plt.figure()
+        for ycol in ycols:
+            plt.plot(x, group[ycol], marker="o", label=ycol)
+
+        plt.title(f"cmd = {cmd_value}")
+        plt.xlabel(xcol)
+        plt.ylabel(" / ".join(ycols))
+        plt.grid(True)
+        plt.legend()
+        plt.tight_layout()
+
+    plt.show()
+
+
+if __name__ == "__main__":
+    main()

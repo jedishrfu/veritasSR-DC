@@ -1,0 +1,5 @@
+#!/bin/zsh
+
+python3 gen-3edge-exprs-0330-3.py --level 2
+
+python3 plot-3edge-exprs-0402-1.py 
