@@ -2,6 +2,7 @@
 
 Evolutionary Symbolic Regression and Equation Discovery in C++
 
+==This project is a Summer 2026 independent study and as such is NOT open to issue, problem reports suggested improvements ==
 ⸻
 
 ## Overview
