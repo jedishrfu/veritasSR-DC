@@ -1,3 +1,16 @@
+/*
+ * VeritasSR
+ * Symbolic Regression and Equation Discovery System
+ *
+ * Copyright (c) 2026 James M. McArdle
+ * All Rights Reserved.
+ *
+ * File: ast_nodes.h
+ * Purpose: Project header copied from the current working prototype.
+ *
+ * SPDX-License-Identifier: Proprietary
+ */
+
 #include <stdio.h>
 #include <math.h>
 #include <stdarg.h>

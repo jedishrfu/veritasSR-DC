@@ -3,68 +3,190 @@
 #include <string.h>
 #include <time.h>
 #include <unistd.h>
+
 #include <string>
 #include <vector>
+#include <set>
 #include <cctype>
 #include <cstdlib>
 #include <sstream>
 #include <iostream>
+#include <cmath>
 
 #include "ast_nodes.h"
 #include "logging_code.h"
+#include "infix_parsing_code.h"
 
 #define FILENAME_SIZE 256
+#define DEFAULT_COEFF 1
+#define MAX_LOOPS 10
 
 VarTable varTable;
 
+struct Options
+{
+  std::string input_file;
+  std::string segments_file;
+  std::string decom_file;
+
+  double tol;
+  int maxFloats;
+  int maxGenerations;
+};
+
+static void ensureDefaultVariables()
+{
+  if (varTable.getCount() == 0)
+  {
+    varTable.addVar("x", 0.0);
+  }
+}
+
+static std::vector<std::string> makeParserVariableNames()
+{
+  std::vector<std::string> vars;
+
+  static const char* defaultNames[] =
+  {
+    "x", "y", "z", "t", "u", "v", "w"
+  };
+
+  int count = varTable.getCount();
+
+  for (int i = 0; i < count; i++)
+  {
+    if (i < 7)
+      vars.push_back(defaultNames[i]);
+    else
+    {
+      char buf[32];
+      snprintf(buf, sizeof(buf), "x%d", i);
+      vars.push_back(buf);
+    }
+  }
+
+  return vars;
+}
+
+static bool addUniqueTree(
+  ExprArray* result,
+  Node* tree,
+  std::set<std::string>& seen)
+{
+  if (!result || !tree)
+    return false;
+
+  std::string key = tree->toString();
+
+  if (seen.find(key) != seen.end())
+  {
+    delete tree;
+    return false;
+  }
+
+  seen.insert(key);
+
+  NodeStats* ns = new NodeStats();
+  ExprStats* es = new ExprStats(tree, ns);
+  result->add(es);
+
+  return true;
+}
+
+static bool addUniqueExprStats(
+  ExprArray* result,
+  ExprStats* src,
+  std::set<std::string>& seen)
+{
+  if (!src || !src->n)
+    return false;
+
+  return addUniqueTree(result, src->n->clone(), seen);
+}
+
 ExprArray* generateBasicExpressions()
 {
+  ensureDefaultVariables();
+
   ExprArray* result = new ExprArray();
+  std::set<std::string> seen;
+
+  std::vector<std::string> vars = makeParserVariableNames();
 
   logPrint("VarCount = %d", varTable.getCount());
 
-  for (int i = 0; i < varTable.getCount(); i++)
+  std::vector<std::string> templates;
+
+  for (size_t i = 0; i < vars.size(); i++)
   {
-    Node* un = Node::makeUnary(OP_SIN, Node::makeVariable(i));
-    NodeStats* uns = new NodeStats();
-    ExprStats* es = new ExprStats(un, uns);
-    result->add(es);
+    const std::string& x = vars[i];
 
-    un = Node::makeUnary(OP_COS, Node::makeVariable(i));
-    uns = new NodeStats();
-    es = new ExprStats(un, uns);
-    result->add(es);
+    templates.push_back(x);
+    templates.push_back("sin(" + x + ")");
+    templates.push_back("cos(" + x + ")");
+    templates.push_back("exp(" + x + ")");
+    templates.push_back("log(" + x + ")");
 
-    un = Node::makeUnary(OP_EXP, Node::makeVariable(i));
-    uns = new NodeStats();
-    es = new ExprStats(un, uns);
-    result->add(es);
+    templates.push_back(x + " + 1");
+    templates.push_back(x + " - 1");
+    templates.push_back("1 - " + x);
+    templates.push_back(x + " * 1");
+    templates.push_back(x + " / 1");
 
-    un = Node::makeUnary(OP_LOG, Node::makeVariable(i));
-    uns = new NodeStats();
-    es = new ExprStats(un, uns);
-    result->add(es);
+    templates.push_back("2 * " + x);
+    templates.push_back("0.5 * " + x);
+    templates.push_back("2 * " + x + " + 1");
+    templates.push_back("0.5 * " + x + " + 1");
 
-    Node* bn = Node::makeBinary(OP_ADD, Node::makeVariable(i), Node::makeCoeffValue(0));
-    NodeStats* bns = new NodeStats();
-    es = new ExprStats(bn, bns);
-    result->add(es);
+    templates.push_back(x + " * " + x);
+    templates.push_back(x + " * " + x + " + " + x);
+    templates.push_back("sin(" + x + ") + " + x);
+    templates.push_back("cos(" + x + ") + " + x);
+    templates.push_back("sin(" + x + ") * " + x);
+    templates.push_back("cos(" + x + ") * " + x);
+    templates.push_back("exp(" + x + ") + " + x);
+    templates.push_back("log(" + x + ") + " + x);
 
-    bn = Node::makeBinary(OP_SUB, Node::makeVariable(i), Node::makeCoeffValue(0));
-    bns = new NodeStats();
-    es = new ExprStats(bn, bns);
-    result->add(es);
-
-    bn = Node::makeBinary(OP_MUL, Node::makeVariable(i), Node::makeCoeffValue(0));
-    bns = new NodeStats();
-    es = new ExprStats(bn, bns);
-    result->add(es);
-
-    bn = Node::makeBinary(OP_DIV, Node::makeVariable(i), Node::makeCoeffValue(0));
-    bns = new NodeStats();
-    es = new ExprStats(bn, bns);
-    result->add(es);
+    templates.push_back("sin(" + x + ") + cos(" + x + ")");
+    templates.push_back("sin(" + x + ") * cos(" + x + ")");
   }
+
+  if (vars.size() >= 2)
+  {
+    for (size_t i = 0; i + 1 < vars.size(); i++)
+    {
+      const std::string& x = vars[i];
+      const std::string& y = vars[i + 1];
+
+      templates.push_back(x + " + " + y);
+      templates.push_back(x + " - " + y);
+      templates.push_back(x + " * " + y);
+      templates.push_back(x + " / " + y);
+
+      templates.push_back("sin(" + x + ") + cos(" + y + ")");
+      templates.push_back("sin(" + x + ") * exp(" + y + ")");
+      templates.push_back("(" + x + " + " + y + ") * (" + x + " - " + y + ")");
+      templates.push_back("2 * " + x + " + 3 * " + y);
+    }
+  }
+
+  for (size_t i = 0; i < templates.size(); i++)
+  {
+    Node* root = parseExpression(templates[i], vars);
+
+    if (!root)
+    {
+      logWarning(
+        "Parser rejected expression '%s': %s",
+        templates[i].c_str(),
+        getLastParseError().c_str());
+      continue;
+    }
+
+    addUniqueTree(result, root, seen);
+  }
+
+  logNote("Initial pool generated from infix templates: %d expressions", result->size());
 
   return result;
 }
@@ -128,6 +250,19 @@ static Node* mutateRandomConstant(const Node* src)
   return n;
 }
 
+static int countOpNodes(const Node* n)
+{
+  if (!n) return 0;
+
+  if (n->getKind() == NODE_UNARY)
+    return 1 + countOpNodes(n->getLeftChild());
+
+  if (n->getKind() == NODE_BINARY)
+    return 1 + countOpNodes(n->getLeftChild()) + countOpNodes(n->getRightChild());
+
+  return 0;
+}
+
 static Node* mutateRandomOperatorRec(const Node* src, int target, int& seen)
 {
   if (!src) return NULL;
@@ -145,7 +280,14 @@ static Node* mutateRandomOperatorRec(const Node* src, int target, int& seen)
     OpKind op = src->getOp();
 
     if (seen == target)
-      op = randomUnaryOp();
+    {
+      OpKind newOp = op;
+
+      while (newOp == op)
+        newOp = randomUnaryOp();
+
+      op = newOp;
+    }
 
     seen++;
 
@@ -160,7 +302,14 @@ static Node* mutateRandomOperatorRec(const Node* src, int target, int& seen)
     OpKind op = src->getOp();
 
     if (seen == target)
-      op = randomBinaryOp();
+    {
+      OpKind newOp = op;
+
+      while (newOp == op)
+        newOp = randomBinaryOp();
+
+      op = newOp;
+    }
 
     seen++;
 
@@ -172,19 +321,6 @@ static Node* mutateRandomOperatorRec(const Node* src, int target, int& seen)
   }
 
   return src->clone();
-}
-
-static int countOpNodes(const Node* n)
-{
-  if (!n) return 0;
-
-  if (n->getKind() == NODE_UNARY)
-    return 1 + countOpNodes(n->getLeftChild());
-
-  if (n->getKind() == NODE_BINARY)
-    return 1 + countOpNodes(n->getLeftChild()) + countOpNodes(n->getRightChild());
-
-  return 0;
 }
 
 static Node* mutateRandomOperator(const Node* src)
@@ -263,6 +399,192 @@ static Node* deleteRandomNode(const Node* src)
   return deleteRandomNodeRec(src, target, seen);
 }
 
+static int countAllNodes(const Node* n)
+{
+  if (!n) return 0;
+
+  return 1
+    + countAllNodes(n->getLeftChild())
+    + countAllNodes(n->getRightChild());
+}
+
+static int countVariableNodes(const Node* n)
+{
+  if (!n) return 0;
+
+  int count = 0;
+
+  if (n->getKind() == NODE_VARIABLE)
+    count++;
+
+  count += countVariableNodes(n->getLeftChild());
+  count += countVariableNodes(n->getRightChild());
+
+  return count;
+}
+
+static Node* cloneSubtreeAt(const Node* src, int target, int& seen)
+{
+  if (!src) return NULL;
+
+  if (seen == target)
+    return src->clone();
+
+  seen++;
+
+  Node* leftResult = cloneSubtreeAt(src->getLeftChild(), target, seen);
+  if (leftResult) return leftResult;
+
+  Node* rightResult = cloneSubtreeAt(src->getRightChild(), target, seen);
+  if (rightResult) return rightResult;
+
+  return NULL;
+}
+
+static Node* cloneReplacingSubtreeAt(
+  const Node* src,
+  int target,
+  int& seen,
+  const Node* replacement)
+{
+  if (!src) return NULL;
+
+  if (seen == target)
+  {
+    seen++;
+    return replacement ? replacement->clone() : NULL;
+  }
+
+  seen++;
+
+  NodeKind kind = src->getKind();
+
+  if (kind == NODE_VALUE)
+    return Node::makeCoeffValue(src->getNodeCoeff());
+
+  if (kind == NODE_VARIABLE)
+    return src->clone();
+
+  if (kind == NODE_UNARY)
+  {
+    return Node::makeUnary(
+      src->getOp(),
+      cloneReplacingSubtreeAt(src->getLeftChild(), target, seen, replacement)
+    );
+  }
+
+  if (kind == NODE_BINARY)
+  {
+    return Node::makeBinary(
+      src->getOp(),
+      cloneReplacingSubtreeAt(src->getLeftChild(), target, seen, replacement),
+      cloneReplacingSubtreeAt(src->getRightChild(), target, seen, replacement)
+    );
+  }
+
+  return src->clone();
+}
+
+static Node* crossoverSubtrees(const Node* a, const Node* b)
+{
+  if (!a || !b) return NULL;
+
+  int countA = countAllNodes(a);
+  int countB = countAllNodes(b);
+
+  if (countA == 0 || countB == 0)
+    return a->clone();
+
+  int cutA = rand() % countA;
+  int cutB = rand() % countB;
+
+  int seenB = 0;
+  Node* donor = cloneSubtreeAt(b, cutB, seenB);
+
+  if (!donor)
+    return a->clone();
+
+  int seenA = 0;
+  Node* child = cloneReplacingSubtreeAt(a, cutA, seenA, donor);
+
+  delete donor;
+
+  return child;
+}
+
+static Node* makeAffineVariable(int varIndex)
+{
+  double a = randomDouble(-10.0, 10.0);
+  double b = randomDouble(-10.0, 10.0);
+
+  return Node::makeBinary(
+    OP_ADD,
+    Node::makeBinary(
+      OP_MUL,
+      Node::makeCoeffValue(a),
+      Node::makeVariable(varIndex)
+    ),
+    Node::makeCoeffValue(b)
+  );
+}
+
+static Node* mutateRandomVariableToAffineRec(
+  const Node* src,
+  int target,
+  int& seen)
+{
+  if (!src) return NULL;
+
+  NodeKind kind = src->getKind();
+
+  if (kind == NODE_VALUE)
+    return Node::makeCoeffValue(src->getNodeCoeff());
+
+  if (kind == NODE_VARIABLE)
+  {
+    if (seen == target)
+    {
+      seen++;
+      return makeAffineVariable(src->getVarIndex());
+    }
+
+    seen++;
+    return src->clone();
+  }
+
+  if (kind == NODE_UNARY)
+  {
+    return Node::makeUnary(
+      src->getOp(),
+      mutateRandomVariableToAffineRec(src->getLeftChild(), target, seen)
+    );
+  }
+
+  if (kind == NODE_BINARY)
+  {
+    return Node::makeBinary(
+      src->getOp(),
+      mutateRandomVariableToAffineRec(src->getLeftChild(), target, seen),
+      mutateRandomVariableToAffineRec(src->getRightChild(), target, seen)
+    );
+  }
+
+  return src->clone();
+}
+
+static Node* mutateRandomVariableToAffine(const Node* src)
+{
+  int varCount = countVariableNodes(src);
+
+  if (varCount == 0)
+    return src ? src->clone() : NULL;
+
+  int target = rand() % varCount;
+  int seen = 0;
+
+  return mutateRandomVariableToAffineRec(src, target, seen);
+}
+
 int bucket(int n)
 {
   if (n <= 150)
@@ -274,58 +596,67 @@ int bucket(int n)
 ExprArray* evolveExpressions(ExprArray* input)
 {
   ExprArray* result = new ExprArray();
+  std::set<std::string> seen;
 
   if (!input || input->size() == 0)
     return result;
 
   enum MutationType
   {
-    MUT_CONST_0 = 0,
-    MUT_CONST_1,
-    MUT_CONST_2,
-    MUT_CONST_3,
+    MUT_CONST = 0,
     MUT_UNARY,
     MUT_BINARY,
     MUT_CHANGE_OP,
     MUT_DELETE_NODE,
-    MUT_COPY
+    MUT_VARIABLE_AFFINE,
+    MUT_CROSSOVER
   };
 
-  const int NUM_CASES = 9;
+  const int NUM_CASES = 7;
 
   int step = bucket(input->size() / 100);
+
   for (int i = 0; i < input->size(); i += step)
   {
     if (!input->items[i] || !input->items[i]->n)
       continue;
 
-    result->add(input->items[i]->clone());
-
     Node* parent = input->items[i]->n;
+
+    addUniqueExprStats(result, input->items[i], seen);
+
     Node* newTree = NULL;
 
     int choice = rand() % NUM_CASES;
 
     switch (choice)
     {
-    case MUT_CONST_0:
-    case MUT_CONST_1:
-    case MUT_CONST_2:
-    case MUT_CONST_3:
+    case MUT_CONST:
     {
-      newTree = mutateRandomConstant(parent);
+      if (countNodeCoeffs(parent) > 0)
+        newTree = mutateRandomConstant(parent);
+      else
+        newTree = mutateRandomVariableToAffine(parent);
+
       break;
     }
 
     case MUT_UNARY:
     {
-      newTree = Node::makeUnary(randomUnaryOp(), parent->clone());
+      newTree = Node::makeUnary(
+        randomUnaryOp(),
+        parent->clone()
+      );
+
       break;
     }
 
     case MUT_BINARY:
     {
       int j = rand() % input->size();
+
+      if (j == i && input->size() > 1)
+        j = (j + 1) % input->size();
 
       if (!input->items[j] || !input->items[j]->n)
         break;
@@ -334,9 +665,21 @@ ExprArray* evolveExpressions(ExprArray* input)
       OpKind op = randomBinaryOp();
 
       if (rand() % 2 == 0)
-        newTree = Node::makeBinary(op, parent->clone(), other->clone());
+      {
+        newTree = Node::makeBinary(
+          op,
+          parent->clone(),
+          other->clone()
+        );
+      }
       else
-        newTree = Node::makeBinary(op, other->clone(), parent->clone());
+      {
+        newTree = Node::makeBinary(
+          op,
+          other->clone(),
+          parent->clone()
+        );
+      }
 
       break;
     }
@@ -353,26 +696,36 @@ ExprArray* evolveExpressions(ExprArray* input)
       break;
     }
 
-    case MUT_COPY:
-    default:
+    case MUT_VARIABLE_AFFINE:
     {
-      newTree = parent->clone();
+      newTree = mutateRandomVariableToAffine(parent);
       break;
     }
+
+    case MUT_CROSSOVER:
+    {
+      int j = rand() % input->size();
+
+      if (j == i && input->size() > 1)
+        j = (j + 1) % input->size();
+
+      if (!input->items[j] || !input->items[j]->n)
+        break;
+
+      newTree = crossoverSubtrees(parent, input->items[j]->n);
+      break;
+    }
+
+    default:
+      break;
     }
 
     if (newTree)
-    {
-      NodeStats* ns = new NodeStats();
-      ExprStats* es = new ExprStats(newTree, ns);
-      result->add(es);
-    }
+      addUniqueTree(result, newTree, seen);
   }
 
   return result;
 }
-
-#define DEFAULT_COEFF 1
 
 void resetNodeCoeffs(Node* node)
 {
@@ -409,17 +762,6 @@ ExprArray* filterPool(
   return result;
 }
 
-struct Options
-{
-  std::string input_file;
-  std::string segments_file;
-  std::string decom_file;
-
-  double tol;
-  int maxFloats;
-  int maxGenerations;
-};
-
 void printHeader()
 {
   logPrint("# Symbolic Regression with Genetic Programming\n\n");
@@ -445,17 +787,14 @@ int processArgs(
   char* argv[],
   Options& opts)
 {
-
   int opt;
 
   while ((opt = getopt(argc, argv, "i:z:o:e:n:g:")) != -1)
   {
     switch (opt)
     {
-
     case 'i':
       opts.input_file = optarg;
-
       break;
 
     case 'z':
@@ -487,10 +826,10 @@ int processArgs(
   return 0;
 }
 
-#define MAX_LOOPS 10
-
 int main(int argc, char* argv[])
 {
+  srand((unsigned int)time(NULL));
+
   printHeader();
 
   Options opts;
@@ -503,6 +842,8 @@ int main(int argc, char* argv[])
 
   if (processArgs(argc, argv, opts))
     return 1;
+
+  ensureDefaultVariables();
 
   logNote("- Input file:        %s", opts.input_file.c_str());
   logNote("- Segment file:      %s", opts.segments_file.c_str());
@@ -528,9 +869,7 @@ int main(int argc, char* argv[])
   long numFloats = fileSize / sizeof(float);
 
   if (numFloats > opts.maxFloats)
-  {
     numFloats = opts.maxFloats;
-  }
 
   float* dataIn = new float[numFloats];
 
@@ -539,38 +878,41 @@ int main(int argc, char* argv[])
 
   logNote("\n\nRead in %zu floats\n\n", count);
 
-  // -------------------------------------------------------
-  //
-  // The Genetic Programming loop
-  //
-  // -------------------------------------------------------
+  ExprArray* exprPool = NULL;
 
-  ExprArray* exprPool = nullptr;
-
-  // timed code section
   CPUTimer all_timer;
   all_timer.start();
 
   for (int generation = 0; generation < opts.maxGenerations; generation++)
   {
-    printf("### Generation %d of %d (cutoff=%g)\n", generation, opts.maxGenerations, cutoffScore);
+    printf("### Generation %d of %d (cutoff=%g)\n",
+      generation,
+      opts.maxGenerations,
+      cutoffScore);
 
-    ExprArray* newPool = 0;
+    ExprArray* newPool = NULL;
 
     CPUTimer ga_loop_timer;
     ga_loop_timer.start();
 
-    if (generation == 0) {
+    if (generation == 0)
+    {
       exprPool = generateBasicExpressions();
     }
-    else {
-      while (exprPool->size() < 100) {
+    else
+    {
+      int guard = 0;
+
+      while (exprPool->size() < 100 && guard < 20)
+      {
         newPool = evolveExpressions(exprPool);
+
         delete exprPool;
         exprPool = newPool;
+
+        guard++;
       }
     }
-
 
     logPrint("#### Generated %d expressions", exprPool->items.size());
     logPrint("| Expr # | MSE | Nodes | Depth | Expression |");
@@ -582,7 +924,6 @@ int main(int argc, char* argv[])
 
       for (int ii = 0; ii < MAX_LOOPS; ii++)
       {
-        // randomize the expression coefficients
         int ncvcount = countNodeCoeffs(es->n);
 
         if (ncvcount > 0)
@@ -590,13 +931,10 @@ int main(int argc, char* argv[])
           std::vector<double> ncv(ncvcount);
 
           for (int j = 0; j < ncvcount; j++)
-          {
             ncv[j] = randomDouble(-10.0, 10.0);
-          }
 
           setNodeCoeffs(es->n, ncv.data());
         }
-
 
         computeScore(
           0,
@@ -606,6 +944,7 @@ int main(int argc, char* argv[])
           es->n,
           es->ns);
       }
+
       NodeStats* score = es->ns;
 
       logPrint(
@@ -616,9 +955,6 @@ int main(int argc, char* argv[])
         score->depth,
         es->n->toString().c_str());
     }
-
-
-
 
     ExprArray* filtered = filterPool(exprPool, cutoffScore);
 
@@ -633,13 +969,14 @@ int main(int argc, char* argv[])
 
     if (exprPool->size() == 0)
     {
-      logError("No expressions survived cutoff.");
+      logError("\n\nNo expressions survived cutoff.");
       break;
     }
 
     for (int i = 0; i < exprPool->size(); i++)
     {
       NodeStats* score = exprPool->items[i]->ns;
+
       computeScore(
         0,
         opts.tol,
@@ -656,10 +993,15 @@ int main(int argc, char* argv[])
         score->depth,
         exprPool->items[i]->n->toString().c_str());
     }
-    logPrint("Generation %d: %.6f s\n", generation, ga_loop_timer.elapsed());
+
+    logPrint("\n\nGeneration %d: %.6f s\n",
+      generation,
+      ga_loop_timer.elapsed());
   }
 
-  logPrint("All %d generations: %.6f s\n", opts.maxGenerations, all_timer.elapsed());
+  logPrint("All %d generations: %.6f s\n",
+    opts.maxGenerations,
+    all_timer.elapsed());
 
   delete exprPool;
   delete[] dataIn;
