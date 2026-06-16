@@ -2,8 +2,8 @@
 
 Evolutionary Symbolic Regression and Equation Discovery in C++
 
-**This project is a Summer 2026 independent study and as such is NOT open to iss
-problem reporting or suggested improvements **
+> **This project is a Summer 2026 independent study and as such is NOT open to issue or problem reporting or suggested improvements.**
+
 ⸻
 
 ## Overview
@@ -68,10 +68,13 @@ Current implementation features include:
 * Automatic fitness scoring
 * Error-based filtering and selection
 
+> **Crossed out features are NOT yet implemented and tested**
+
 ⸻
 
 ## Architecture
 
+```mermaid
 graph TD
 Data --> Parser
 Parser --> AST
@@ -80,6 +83,7 @@ Evolution --> Scoring
 Scoring --> Selection
 Selection --> Evolution
 Selection --> BestEquations
+```
 
 ### Node
 
@@ -146,7 +150,9 @@ Examples:
 
 ### Parser
 
-~~The infix parser converts expressions such as:
+> **TBD FEATURE**
+
+The infix parser converts expressions such as:
 
 sin(x) + 3
 
@@ -159,7 +165,7 @@ The parser currently supports:
 * Variables
 * Constants
 * Function calls
-* Operator precedence~~
+* Operator precedence
 
 ⸻
 
@@ -182,6 +188,7 @@ Responsibilities:
 
 ## Genetic Algorithm Workflow
 
+```mermaid
 flowchart TD
 A[Generate Initial Expressions]
 --> B[Assign Random Coefficients]
@@ -192,25 +199,28 @@ E --> F[Mutate Survivors]
 F --> G[Create New Population]
 G --> H[Next Generation]
 H --> C
+```
 
 1. Initial Population
 
 The system generates basic expressions for each variable:
 
-sin(x)
-cos(x)
-exp(x)
-log(x)
-x + c
-x - c
-x * c
-x / c
+* sin(x)
+* cos(x)
+* exp(x)
+* log(x)
+* x + c
+* x - c
+* x * c
+* x / c
 
 ⸻
 
 2. Evaluation
 
-Expressions are evaluated across all samples in the dataset.
+Expressions are evaluated across all samples in the dataset in blocks of 1000 samples.
+
+> **This is under test for 1st 1000 samples.**
 
 ⸻
 
@@ -311,12 +321,13 @@ represented as:
 
 ### Supported Operators
 
-Category	Operators
-Arithmetic	+, -, *, /
-Trigonometric	sin, cos
-Exponential	exp
-Logarithmic	log
-Other	unary minus
+| Category | Operators |
+| :---------- | :-------------
+| Arithmetic |	+, -, *, / |
+| Trigonometric | sin, cos |
+| Exponential | exp |
+| Logarithmic | log |
+
 
 ⸻
 
@@ -350,10 +361,10 @@ x * 3
 
 Wraps an expression inside:
 
-sin(...)
-cos(...)
-exp(...)
-log(...)
+- sin(...)
+- cos(...)
+- exp(...)
+- log(...)
 
 ⸻
 
@@ -363,9 +374,9 @@ Combines two existing expressions.
 
 Example:
 
-sin(x)
-+
-exp(x)
+- sin(x)
+- +
+- exp(x)
 
 ⸻
 
@@ -379,20 +390,19 @@ Randomly removes part of a tree to simplify an expression.
 
 The implementation computes:
 
-Metric	Description
-MAE	Mean Absolute Error
-MSE	Mean Squared Error
-RMSE	Root Mean Squared Error
-PSNR	Peak Signal-to-Noise Ratio
-Max Absolute Error	Largest observed error
-Node Count	Expression size
-Tree Depth	Expression depth
-Within Tolerance	Samples meeting error threshold
-Outside Tolerance	Samples exceeding threshold
+| Metric | Description |
+| :------------------ | :------------------------------ |
+| MAE                 | Mean Absolute Error             |
+| MSE                 | Mean Squared Error              |
+| RMSE                | Root Mean Squared Error         | 
+| PSNR                | Peak Signal-to-Noise Ratio      |
+| Max Absolute Error  | Largest observed error          |
+| Node Count          | Expression size                 |     
+| Tree Depth          | Expression depth                |
+| Within Tolerance    | Samples meeting error threshold |
+| Outside Tolerance   | Samples exceeding threshold     |
 
-Current filtering is based primarily on:
-
-MSE < cutoffScore
+> **Current filtering is based primarily on: MSE < cutoffScore**
 
 ⸻
 
@@ -435,23 +445,23 @@ g++ -std=c++17 \
 
 Basic execution:
 
-./veritassr -i data.f32
+./exprgen -i data.f32
 
 Specify tolerance:
 
-./veritassr \
+./exprgen \
     -i data.f32 \
     -e 0.01
 
 Limit dataset size:
 
-./veritassr \
+./exprgen \
     -i data.f32 \
     -n 1000
 
 Specify generations:
 
-./veritassr \
+./exprgen \
     -i data.f32 \
     -g 20
 
@@ -484,7 +494,9 @@ Actual results depend on:
 * Random seed
 * Fitness cutoff
 
-⸻
+<!--
+
+---
 
 ## Research Applications
 
@@ -513,6 +525,7 @@ Represent large numerical datasets as equations instead of samples.
 ### Explainable AI
 
 Generate interpretable models rather than black-box predictors.
+-->
 
 ⸻
 
@@ -587,7 +600,7 @@ These items are future possibilities and are not currently implemented.
 
 License selection is pending.
 
-Until a license is added, all rights remain reserved by the author.
+> **Until a license is added, all rights remain reserved by the author.**
 
 ⸻
 
@@ -607,4 +620,4 @@ Related systems include:
 * PySR
 * AI Feynman
 
-No code from those projects is included in this repository.
+> **No code from those projects is included in this repository.**
