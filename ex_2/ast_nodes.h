@@ -1,3 +1,5 @@
+#pragma once
+
 #include <stdio.h>
 #include <math.h>
 #include <stdarg.h>
@@ -7,13 +9,12 @@
 
 #include <string>
 #include <sstream>
+#include <iomanip>
 #include <vector>
 #include <random>
+#include <utility>
 
 #include "logging_code.h"
-
-#ifndef AST_NODES_H
-#define AST_NODES_H
 
 enum NodeKind
 {
@@ -113,8 +114,8 @@ public:
   Node* getLeftChild() const { return lc; }
   Node* getRightChild() const { return rc; }
 
-  double eval() const;
-  std::string toString() const;
+  inline double eval() const;
+  inline std::string toString() const;
 
 };
 
@@ -512,8 +513,28 @@ private:
 };
 
 class ExprArray {
+
 public:
   std::vector<ExprStats*> items;
+
+  ExprArray(ExprArray&& other) noexcept
+    : items(std::move(other.items))
+  {
+    other.items.clear();
+  }
+
+  ExprArray& operator=(ExprArray&& other) noexcept
+  {
+    if (this != &other)
+    {
+      clear();
+      items = std::move(other.items);
+      other.items.clear();
+    }
+
+    return *this;
+  }
+
 
   ExprArray() {
 
@@ -599,7 +620,7 @@ std::string Node::toString() const {
   switch (kind) {
   case NODE_VALUE: {
     std::ostringstream ss;
-    ss << cv;
+    ss << std::fixed << std::setprecision(1) << cv;
     return ss.str();
   }
 
@@ -645,15 +666,3 @@ std::string Node::toString() const {
 
   return "?";
 };
-
-double randomDouble(double minVal, double maxVal)
-{
-  static std::random_device rd;
-  static std::mt19937 gen(rd());
-
-  std::uniform_real_distribution<double> dist(minVal, maxVal);
-
-  return dist(gen);
-};
-
-#endif

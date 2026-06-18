@@ -1,4 +1,4 @@
-g++ -std=c++17 -Wall -Wextra -g -fsanitize=address $1.cpp -o $1  2>&1 >$1_build.log
+g++ -std=c++17 -Wall -Wextra -g -fsanitize=address $1.cpp ast_io.cpp -o $1  2>&1 >$1_build.log
 # -fno-exceptions -fno-rtti -pedantic -Werror -Wno-unused-function -Wno-unused-variable -Wno-unused-parameter       
 
 if [ ${PIPESTATUS[0]} -eq 0 ]

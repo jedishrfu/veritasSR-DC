@@ -1,11 +1,9 @@
+#pragma once
+
 #include <stdio.h>
 #include <stdarg.h>
 #include <sys/time.h>
 #include <string.h>
-
-#ifndef LOGGING_CODE
-#define LOGGING_CODE
-
 struct CPUTimer
 {
   timeval beg, end;
@@ -36,7 +34,7 @@ inline void appendFormat(char* buffer, int maxLen, const char* fmt, ...)
   buffer[maxLen - 1] = '\0';
 }
 
-void vlogPrint(const char* color, const char* fmt, va_list args)
+inline void vlogPrint(const char* color, const char* fmt, va_list args)
 {
   if (!fmt)
     return;
@@ -56,7 +54,7 @@ void vlogPrint(const char* color, const char* fmt, va_list args)
   }
 }
 
-void logPrint(const char* fmt, ...)
+inline void logPrint(const char* fmt, ...)
 {
   va_list args;
   va_start(args, fmt);
@@ -64,7 +62,7 @@ void logPrint(const char* fmt, ...)
   va_end(args);
 }
 
-void logNote(const char* fmt, ...)
+inline void logNote(const char* fmt, ...)
 {
   va_list args;
   va_start(args, fmt);
@@ -72,7 +70,7 @@ void logNote(const char* fmt, ...)
   va_end(args);
 }
 
-void logWarning(const char* fmt, ...)
+inline void logWarning(const char* fmt, ...)
 {
   printf("\n\nWarning: ");
 
@@ -82,7 +80,7 @@ void logWarning(const char* fmt, ...)
   va_end(args);
 }
 
-void logError(const char* fmt, ...)
+inline void logError(const char* fmt, ...)
 {
   printf("\n\nERROR: ");
 
@@ -91,5 +89,3 @@ void logError(const char* fmt, ...)
   vlogPrint("red", fmt, args);
   va_end(args);
 }
-
-#endif

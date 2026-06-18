@@ -14,6 +14,7 @@
 #include <cmath>
 
 #include "ast_nodes.h"
+#include "ast_io.h"
 #include "logging_code.h"
 #include "infix_parsing_code.h"
 
@@ -23,6 +24,15 @@
 
 VarTable varTable;
 
+inline double randomDouble(double minVal, double maxVal)
+{
+  static std::random_device rd;
+  static std::mt19937 gen(rd());
+
+  std::uniform_real_distribution<double> dist(minVal, maxVal);
+
+  return dist(gen);
+};
 struct Options
 {
   std::string input_file;
@@ -130,8 +140,8 @@ ExprArray* generateBasicExpressions()
     templates.push_back(x + " + 1");
     templates.push_back(x + " - 1");
     templates.push_back("1 - " + x);
-    templates.push_back(x + " * 1");
-    templates.push_back(x + " / 1");
+    templates.push_back(x + " * 2");
+    templates.push_back(x + " / 2");
 
     templates.push_back("2 * " + x);
     templates.push_back("0.5 * " + x);
@@ -186,7 +196,7 @@ ExprArray* generateBasicExpressions()
     addUniqueTree(result, root, seen);
   }
 
-  logNote("Initial pool generated from infix templates: %d expressions", result->size());
+  logPrint("\nInitial pool generated from infix templates: %d expressions", result->size());
 
   return result;
 }
@@ -215,39 +225,6 @@ static OpKind randomBinaryOp()
   }
 
   return OP_ADD;
-}
-
-static void collectCoeffNodes(Node* n, std::vector<Node*>& coeffs)
-{
-  if (!n) return;
-
-  if (n->getKind() == NODE_VALUE)
-  {
-    coeffs.push_back(n);
-    return;
-  }
-
-  collectCoeffNodes(n->getLeftChild(), coeffs);
-  collectCoeffNodes(n->getRightChild(), coeffs);
-}
-
-static Node* mutateRandomConstant(const Node* src)
-{
-  Node* n = src->clone();
-
-  std::vector<Node*> coeffs;
-  collectCoeffNodes(n, coeffs);
-
-  if (coeffs.size() > 0)
-  {
-    int k = rand() % coeffs.size();
-    double oldValue = coeffs[k]->getNodeCoeff();
-    double delta = randomDouble(-1.0, 1.0);
-
-    coeffs[k]->setNodeCoeff(oldValue + delta);
-  }
-
-  return n;
 }
 
 static int countOpNodes(const Node* n)
@@ -584,6 +561,51 @@ static Node* mutateRandomVariableToAffine(const Node* src)
 
   return mutateRandomVariableToAffineRec(src, target, seen);
 }
+Node* mutateRandomCoeff(Node* parent)
+{
+  if (parent == nullptr)
+    return nullptr;
+
+  Node* root = parent->clone();
+
+  std::vector<Node*> coeffNodes;
+
+  std::function<void(Node*)> collectCoeffs =
+    [&](Node* node)
+    {
+      if (node == nullptr)
+        return;
+
+      if (node->getKind() == NODE_VALUE)
+        coeffNodes.push_back(node);
+
+      collectCoeffs(node->getLeftChild());
+      collectCoeffs(node->getRightChild());
+    };
+
+  collectCoeffs(root);
+
+  if (coeffNodes.empty())
+    return root;
+
+  int idx = std::rand() % coeffNodes.size();
+
+  Node* coeff = coeffNodes[idx];
+
+  double oldValue = coeff->getNodeCoeff();
+
+  if (std::fabs(oldValue) < 1.0e-12)
+  {
+    coeff->setNodeCoeff(randomDouble(-10.0, 10.0));
+  }
+  else
+  {
+    coeff->setNodeCoeff(
+      oldValue * randomDouble(0.8, 1.2));
+  }
+
+  return root;
+}
 
 int bucket(int n)
 {
@@ -634,7 +656,7 @@ ExprArray* evolveExpressions(ExprArray* input)
     case MUT_CONST:
     {
       if (countNodeCoeffs(parent) > 0)
-        newTree = mutateRandomConstant(parent);
+        newTree = mutateRandomCoeff(parent);
       else
         newTree = mutateRandomVariableToAffine(parent);
 
@@ -826,6 +848,244 @@ int processArgs(
   return 0;
 }
 
+
+inline void collectCoeffNodes(Node* node, std::vector<Node*>& coeffs)
+{
+  if (node == nullptr)
+    return;
+
+  if (node->isCoeffNode())
+  {
+    coeffs.push_back(node);
+    return;
+  }
+
+  collectCoeffNodes(node->getLeftChild(), coeffs);
+  collectCoeffNodes(node->getRightChild(), coeffs);
+}
+
+inline std::vector<Node*> extractCoeffNodes(Node* root)
+{
+  std::vector<Node*> coeffs;
+  collectCoeffNodes(root, coeffs);
+  return coeffs;
+}
+
+inline double scoreMSE(
+  Node* n,
+  int vi,
+  float* data,
+  int numFloats)
+{
+  NodeStats ns;
+  computeScore(vi, 0.0, data, numFloats, n, &ns);
+  return ns.mse;
+}
+
+inline double optimizeCoeffSubset_HillClimbing_Search(
+  Node* n,
+  const std::vector<Node*>& coeffs,
+  int lo,
+  int hi,
+  int vi,
+  float* data,
+  int numFloats,
+  double initialStep,
+  double tolerance,
+  int maxIterations)
+{
+  int count = hi - lo;
+
+  if (count <= 0)
+    return scoreMSE(n, vi, data, numFloats);
+
+  double bestMSE = scoreMSE(n, vi, data, numFloats);
+
+  std::vector<double> step(count, initialStep);
+
+  // Determine initial sign for this subset
+  for (int i = 0; i < count; i++)
+  {
+    Node* c = coeffs[lo + i];
+
+    double original = c->getNodeCoeff();
+
+    c->setNodeCoeff(original + initialStep);
+    double plusMSE = scoreMSE(n, vi, data, numFloats);
+
+    c->setNodeCoeff(original - initialStep);
+    double minusMSE = scoreMSE(n, vi, data, numFloats);
+
+    c->setNodeCoeff(original);
+
+    if (plusMSE < bestMSE && plusMSE <= minusMSE)
+      step[i] = fabs(initialStep);
+    else if (minusMSE < bestMSE)
+      step[i] = -fabs(initialStep);
+    else
+      step[i] = 0.0;
+  }
+
+  // Hill-climb this subset
+  for (int iter = 0; iter < maxIterations; iter++)
+  {
+    double maxStep = 0.0;
+
+    for (int i = 0; i < count; i++)
+      maxStep = std::max(maxStep, fabs(step[i]));
+
+    if (maxStep < tolerance)
+      break;
+
+    std::vector<double> oldValues(count);
+
+    for (int i = 0; i < count; i++)
+    {
+      Node* c = coeffs[lo + i];
+
+      oldValues[i] = c->getNodeCoeff();
+      c->setNodeCoeff(oldValues[i] + step[i]);
+    }
+
+    double candidateMSE = scoreMSE(n, vi, data, numFloats);
+
+    if (candidateMSE < bestMSE)
+    {
+      bestMSE = candidateMSE;
+
+      for (int i = 0; i < count; i++)
+        step[i] *= 2.0;
+    }
+    else
+    {
+      for (int i = 0; i < count; i++)
+        coeffs[lo + i]->setNodeCoeff(oldValues[i]);
+
+      for (int i = 0; i < count; i++)
+        step[i] *= 0.5;
+    }
+  }
+
+  // Recursive half search
+  if (count > 1)
+  {
+    int mid = lo + count / 2;
+
+    double beforeLeft = scoreMSE(n, vi, data, numFloats);
+    double leftMSE = optimizeCoeffSubset_HillClimbing_Search(
+      n, coeffs, lo, mid,
+      vi, data, numFloats,
+      initialStep, tolerance, maxIterations);
+
+    double beforeRight = scoreMSE(n, vi, data, numFloats);
+    double rightMSE = optimizeCoeffSubset_HillClimbing_Search(
+      n, coeffs, mid, hi,
+      vi, data, numFloats,
+      initialStep, tolerance, maxIterations);
+
+    bestMSE = std::min(bestMSE, leftMSE);
+    bestMSE = std::min(bestMSE, rightMSE);
+    bestMSE = std::min(bestMSE, beforeLeft);
+    bestMSE = std::min(bestMSE, beforeRight);
+  }
+
+  return bestMSE;
+}
+
+inline double optimize_NodeCoeffs_HillClimbing_Search(
+  Node* n,
+  int vi,
+  float* data,
+  int numFloats,
+  double initialStep = 1.0,
+  double tolerance = 1.0e-6,
+  int maxIterations = 1000)
+{
+  if (n == nullptr || data == nullptr || numFloats <= 0)
+    return 1.0e99;
+
+  std::vector<Node*> coeffs = extractCoeffNodes(n);
+
+  if (coeffs.empty())
+    return scoreMSE(n, vi, data, numFloats);
+
+  return optimizeCoeffSubset_HillClimbing_Search(
+    n,
+    coeffs,
+    0,
+    static_cast<int>(coeffs.size()),
+    vi,
+    data,
+    numFloats,
+    initialStep,
+    tolerance,
+    maxIterations);
+}
+
+inline NodeStats averageNodeStats(const ExprArray& pool)
+{
+  NodeStats avg;
+
+  if (pool.items.empty())
+    return avg;
+
+  int validCount = 0;
+
+  for (size_t i = 0; i < pool.items.size(); i++)
+  {
+    ExprStats* es = pool.items[i];
+
+    if (es == nullptr || es->ns == nullptr)
+      continue;
+
+    const NodeStats& s = *es->ns;
+
+    avg.count += s.count;
+    avg.numWithinTol += s.numWithinTol;
+    avg.numOutsideTol += s.numOutsideTol;
+
+    avg.sumError += s.sumError;
+    avg.sumSquaredError += s.sumSquaredError;
+    avg.maxAbsError += s.maxAbsError;
+    avg.meanOriginal += s.meanOriginal;
+
+    if (!std::isfinite(s.mae) || !std::isfinite(s.mse) || !std::isfinite(s.rmse))
+      continue;
+
+    avg.mae += s.mae;
+    avg.mse += s.mse;
+    avg.rmse += s.rmse;
+    avg.psnr += s.psnr;
+
+    avg.nodeCount += s.nodeCount;
+    avg.depth += s.depth;
+
+    validCount++;
+  }
+
+  if (validCount == 0)
+    return avg;
+
+  avg.count /= validCount;
+  avg.numWithinTol /= validCount;
+  avg.numOutsideTol /= validCount;
+
+  avg.sumError /= validCount;
+  avg.sumSquaredError /= validCount;
+  avg.maxAbsError /= validCount;
+  avg.meanOriginal /= validCount;
+
+  avg.mae /= validCount;
+  avg.mse /= validCount;
+  avg.rmse /= validCount;
+  avg.psnr /= validCount;
+
+  avg.nodeCount /= validCount;
+  avg.depth /= validCount;
+
+  return avg;
+}
+
 int main(int argc, char* argv[])
 {
   srand((unsigned int)time(NULL));
@@ -914,6 +1174,9 @@ int main(int argc, char* argv[])
       }
     }
 
+    saveExpressions("gen_x.ast", *exprPool);
+    ExprArray testReload = loadExpressions("gen_x.ast", true);
+
     logPrint("#### Generated %d expressions", exprPool->items.size());
     logPrint("| Expr # | MSE | Nodes | Depth | Expression |");
     logPrint("|--------|-----|-------|-------|------------|");
@@ -921,29 +1184,29 @@ int main(int argc, char* argv[])
     for (int i = 0; i < exprPool->size(); i++)
     {
       ExprStats* es = exprPool->items[i];
+      Node* n = es->n;
 
-      for (int ii = 0; ii < MAX_LOOPS; ii++)
-      {
-        int ncvcount = countNodeCoeffs(es->n);
+      double vi = varTable.getValue(0);
 
-        if (ncvcount > 0)
-        {
-          std::vector<double> ncv(ncvcount);
+      int numCoeffs = countNodeCoeffs(exprPool->items[i]->n);
 
-          for (int j = 0; j < ncvcount; j++)
-            ncv[j] = randomDouble(-10.0, 10.0);
+      optimize_NodeCoeffs_HillClimbing_Search(
+        n,
+        vi,
+        dataIn,
+        numCoeffs,
+        1.0,
+        opts.tol,
+        1000
+      );
 
-          setNodeCoeffs(es->n, ncv.data());
-        }
-
-        computeScore(
-          0,
-          opts.tol,
-          dataIn,
-          (int)numFloats,
-          es->n,
-          es->ns);
-      }
+      computeScore(
+        0,
+        opts.tol,
+        dataIn,
+        (int)numFloats,
+        es->n,
+        es->ns);
 
       NodeStats* score = es->ns;
 
@@ -955,6 +1218,10 @@ int main(int argc, char* argv[])
         score->depth,
         es->n->toString().c_str());
     }
+
+    NodeStats avg = averageNodeStats(*exprPool);
+
+    logPrint("\naverage MSE: %f", avg.mse);
 
     ExprArray* filtered = filterPool(exprPool, cutoffScore);
 

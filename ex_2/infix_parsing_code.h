@@ -1,12 +1,11 @@
+#pragma once
+
 #include "ast_nodes.h"
 
 #include <string>
 #include <vector>
 #include <cctype>
 #include <cstdlib>
-
-#ifndef INFIX_PARSING_CODE
-#define INFIX_PARSING_CODE
 
 //VarTable varTable;
 
@@ -461,4 +460,3 @@ int main()
     return 0;
 }
 #endif // end of main 
-#endif
