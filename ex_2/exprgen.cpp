@@ -1098,12 +1098,12 @@ int main(int argc, char* argv[])
   opts.maxFloats = 1000;
   opts.maxGenerations = 10;
 
-  double cutoffScore = 100;
-
   if (processArgs(argc, argv, opts))
     return 1;
 
   ensureDefaultVariables();
+
+  double cutoffScore = 1024 * opts.tol;
 
   logNote("- Input file:        %s", opts.input_file.c_str());
   logNote("- Segment file:      %s", opts.segments_file.c_str());
@@ -1221,7 +1221,7 @@ int main(int argc, char* argv[])
 
     NodeStats avg = averageNodeStats(*exprPool);
 
-    logPrint("\naverage MSE: %f", avg.mse);
+    logPrint("\n- average MSE: %.1f", avg.mse);
 
     ExprArray* filtered = filterPool(exprPool, cutoffScore);
 
@@ -1229,6 +1229,8 @@ int main(int argc, char* argv[])
     exprPool = filtered;
 
     cutoffScore *= 0.5;
+
+    logNote("\n- Cutoff Score:      %g", cutoffScore);
 
     logPrint("#### Kept %d expressions", exprPool->size());
     logPrint("| Expr # | MSE | Nodes | Depth | Expression |");
