@@ -3,7 +3,7 @@
 #include <cmath>
 #include <cfloat>
 
-#include "ast_nodes.h"
+#include "../include/ast_nodes.h"
 #include "infix_parsing_code.h"
 
 // Required because ast_nodes.h expects this global.

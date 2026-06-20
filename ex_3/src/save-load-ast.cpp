@@ -1,9 +1,10 @@
-#include "ast_io.h"
-
-#include <cstdint>
 #include <fstream>
 #include <stdexcept>
 #include <string>
+
+#include "../include/ast_nodes.h"
+#include "../include/ast_nodestats.h"
+#include "../include/expr_array.h"
 
 static constexpr uint32_t AST_MAGIC = 0x56535241; // VSRA
 static constexpr uint32_t STAT_MAGIC = 0x56535253; // VSRS
@@ -30,7 +31,7 @@ static void writeNode(std::ofstream& out, const Node* n)
     if (!exists)
         return;
 
-    NodeRecord r;
+    NodeRecord r{};
     r.kind = static_cast<int32_t>(n->getKind());
     r.op = static_cast<int32_t>(n->getOp());
     r.cv = n->getNodeCoeff();
@@ -53,14 +54,14 @@ static Node* readNode(std::ifstream& in)
     if (!exists)
         return nullptr;
 
-    NodeRecord r;
+    NodeRecord r{};
     in.read(reinterpret_cast<char*>(&r), sizeof(r));
 
     if (!in)
         throw std::runtime_error("Unexpected EOF while reading node record.");
 
-    NodeKind kind = static_cast<NodeKind>(r.kind);
-    OpKind op = static_cast<OpKind>(r.op);
+    auto kind = static_cast<NodeKind>(r.kind);
+    auto op = static_cast<OpKind>(r.op);
 
     switch (kind)
     {
@@ -73,11 +74,12 @@ static Node* readNode(std::ifstream& in)
     case NODE_UNARY:
         return Node::makeUnary(op, readNode(in));
 
-    case NODE_BINARY: {
-        Node* left = readNode(in);
-        Node* right = readNode(in);
-        return Node::makeBinary(op, left, right);
-    }
+    case NODE_BINARY:
+        {
+            Node* left = readNode(in);
+            Node* right = readNode(in);
+            return Node::makeBinary(op, left, right);
+        }
     }
 
     throw std::runtime_error("Invalid NodeKind in AST file.");

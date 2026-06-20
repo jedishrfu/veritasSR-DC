@@ -4,8 +4,8 @@
 #include <time.h>
 #include <unistd.h>
 
-#include "ast_nodes.h"
-#include "logging_code.h"
+#include "../include/ast_nodes.h"
+#include "helper_code.h"
 
 #define FILENAME_SIZE 256
 
@@ -338,7 +338,7 @@ int main(int argc, char *argv[])
             opts.tol,
             dataIn,
             (int)numFloats,
-            exprPool->items[i].expr,
+            exprPool->get(i),
             ctx, entry);
 
         if (!exprPool->items[i].score) {
@@ -346,6 +346,7 @@ int main(int argc, char *argv[])
         }
 
         ScoreStats *oldScore = exprPool->items[i].score;
+
 
         if (score->mse < oldScore->mse)
         {

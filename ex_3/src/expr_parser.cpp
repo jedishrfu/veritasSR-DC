@@ -1,6 +1,6 @@
 #pragma once
 
-#include "ast_nodes.h"
+#include "../include/ast_nodes.h"
 
 #include <string>
 #include <vector>

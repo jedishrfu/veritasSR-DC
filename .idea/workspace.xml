@@ -3,12 +3,59 @@
   <component name="AutoImportSettings">
     <option name="autoReloadType" value="SELECTIVE" />
   </component>
+  <component name="BackendCodeEditorMiscSettings">
+    <option name="/Default/Housekeeping/FeatureSuggestion/FeatureSuggestionManager/DisabledSuggesters/=SwitchToGoToActionSuggester/@EntryIndexedValue" value="true" type="bool" />
+  </component>
+  <component name="CMakePresetLoader"><![CDATA[{
+  "useNewFormat": true
+}]]></component>
+  <component name="CMakeProjectFlavorService">
+    <option name="flavorId" value="CMakePlainProjectFlavor" />
+  </component>
+  <component name="CMakeReloadState">
+    <option name="reloaded" value="true" />
+  </component>
+  <component name="CMakeRunConfigurationManager">
+    <generated>
+      <config projectName="veritasSR_DC" targetName="veritasSR_DC" />
+    </generated>
+  </component>
+  <component name="CMakeSettings">
+    <configurations>
+      <configuration PROFILE_NAME="Debug" ENABLED="true" CONFIG_NAME="Debug" />
+    </configurations>
+  </component>
   <component name="ChangeListManager">
     <list default="true" id="1529fcc4-f0d8-418c-a2b4-bdd0e4c7b37f" name="Changes" comment="">
-      <change beforePath="$PROJECT_DIR$/ex_4_refactored/include/evolve_expr.h" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/ex_4_refactored/include/expr_array.h" beforeDir="false" afterPath="$PROJECT_DIR$/ex_4_refactored/include/expr_array.h" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/ex_4_refactored/include/exprgen.h" beforeDir="false" afterPath="$PROJECT_DIR$/ex_4_refactored/include/exprgen.h" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/ex_4_refactored/src/core/scoring_and_args.cpp" beforeDir="false" afterPath="$PROJECT_DIR$/ex_4_refactored/src/core/scoring_and_args.cpp" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/ex_3/include/ast_nodes.h" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/ex_3/include/util_code.h" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/.idea/veritasSR-DC.iml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/veritasSR-DC.iml" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/ex_2/_build.log" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/ex_2/ast_io.cpp" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/ex_2/ast_io.h" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/ex_2/ast_nodes.h" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/ex_2/build.log" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/ex_2/exprgen" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/ex_2/exprgen.cpp" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/ex_2/exprgen.dSYM/Contents/Info.plist" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/ex_2/exprgen.dSYM/Contents/Resources/DWARF/exprgen" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/ex_2/exprgen.dSYM/Contents/Resources/Relocations/aarch64/exprgen.yml" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/ex_2/exprgen_build.log" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/ex_2/gen_x.ast" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/ex_2/gen_x.ast.stats" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/ex_2/infix_parsing_code.h" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/ex_2/logging_code.h" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/ex_2/old-code/main.cpp" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/ex_2/old-code/old-code.txt" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/ex_2/old-code/old_ast_nodes.h" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/ex_2/old-code/old_exprgen.cpp" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/ex_2/runcpp" beforeDir="false" afterPath="$PROJECT_DIR$/ex_3/runcpp" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/ex_2/test_coeff_fit" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/ex_2/test_coeff_fit.cpp" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/ex_2/test_coeff_fit_build.log" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/ex_2/testrun.md" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/ex_2/testrun.mdd" beforeDir="false" />
     </list>
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
@@ -18,16 +65,23 @@
   <component name="ClangdSettings">
     <option name="formatViaClangd" value="false" />
   </component>
+  <component name="ExecutionTargetManager" SELECTED_TARGET="CMakeBuildProfile:Debug" />
   <component name="Git.Settings">
     <option name="RECENT_GIT_ROOT_PATH" value="$PROJECT_DIR$" />
   </component>
   <component name="MacroExpansionManager">
     <option name="directoryName" value="WkgyjceX" />
   </component>
-  <component name="ProjectColorInfo"><![CDATA[{
-  "associatedIndex": 8,
-  "fromUser": false
-}]]></component>
+  <component name="ProjectApplicationVersion">
+    <option name="ide" value="CLion" />
+    <option name="majorVersion" value="2026" />
+    <option name="minorVersion" value="1" />
+    <option name="productBranch" value="Classic" />
+  </component>
+  <component name="ProjectColorInfo">{
+  &quot;associatedIndex&quot;: 8,
+  &quot;fromUser&quot;: false
+}</component>
   <component name="ProjectId" id="3FFa2pHBZSocFC8ERdmdFZ0dZQo" />
   <component name="ProjectViewState">
     <option name="hideEmptyMiddlePackages" value="true" />
@@ -42,15 +96,52 @@
     "RunOnceActivity.git.unshallow": "true",
     "RunOnceActivity.readMode.enableVisualFormatting": "true",
     "RunOnceActivity.typescript.service.memoryLimit.init": "true",
+    "RunOnceActivity.west.config.association.type.startup.service": "true",
     "cf.first.check.clang-format": "false",
     "cidr.known.project.marker": "true",
     "codeWithMe.voiceChat.enabledByDefault": "false",
     "git-widget-placeholder": "main",
+    "node.js.detected.package.eslint": "true",
+    "node.js.detected.package.tslint": "true",
+    "node.js.selected.package.eslint": "(autodetect)",
+    "node.js.selected.package.tslint": "(autodetect)",
     "nodejs_package_manager_path": "npm",
     "org.rust.first.attach.projects": "true",
     "vue.rearranger.settings.migration": "true"
   }
 }]]></component>
+  <component name="RecentsManager">
+    <key name="MoveFile.RECENT_KEYS">
+      <recent name="$PROJECT_DIR$" />
+      <recent name="$PROJECT_DIR$/ex_3" />
+      <recent name="$PROJECT_DIR$/ex_2/src" />
+      <recent name="$PROJECT_DIR$/ex_2/include" />
+    </key>
+  </component>
+  <component name="RunManager">
+    <configuration default="true" type="CLionExternalRunConfiguration" factoryName="Application" REDIRECT_INPUT="false" ELEVATE="false" USE_EXTERNAL_CONSOLE="false" EMULATE_TERMINAL="false" PASS_PARENT_ENVS_2="true">
+      <method v="2">
+        <option name="CLION.EXTERNAL.BUILD" enabled="true" />
+      </method>
+    </configuration>
+    <configuration default="true" type="CMakeBoostTestRunConfigurationType" factoryName="Boost Test" REDIRECT_INPUT="false" ELEVATE="false" USE_EXTERNAL_CONSOLE="false" EMULATE_TERMINAL="false" PASS_PARENT_ENVS_2="true">
+      <method v="2" />
+    </configuration>
+    <configuration default="true" type="CMakeCatchTestRunConfigurationType" factoryName="Catch Test" REDIRECT_INPUT="false" ELEVATE="false" USE_EXTERNAL_CONSOLE="false" EMULATE_TERMINAL="false" PASS_PARENT_ENVS_2="true">
+      <method v="2" />
+    </configuration>
+    <configuration default="true" type="CMakeDoctestTestRunConfigurationType" factoryName="doctest Test" REDIRECT_INPUT="false" ELEVATE="false" USE_EXTERNAL_CONSOLE="false" EMULATE_TERMINAL="false" PASS_PARENT_ENVS_2="true">
+      <method v="2" />
+    </configuration>
+    <configuration default="true" type="CMakeGoogleTestRunConfigurationType" factoryName="Google Test" REDIRECT_INPUT="false" ELEVATE="false" USE_EXTERNAL_CONSOLE="false" EMULATE_TERMINAL="false" PASS_PARENT_ENVS_2="true">
+      <method v="2" />
+    </configuration>
+    <configuration name="veritasSR_DC" type="CMakeRunConfiguration" factoryName="Application" REDIRECT_INPUT="false" ELEVATE="false" USE_EXTERNAL_CONSOLE="false" EMULATE_TERMINAL="false" PASS_PARENT_ENVS_2="true" PROJECT_NAME="veritasSR_DC" TARGET_NAME="veritasSR_DC" CONFIG_NAME="Debug" RUN_TARGET_PROJECT_NAME="veritasSR_DC" RUN_TARGET_NAME="veritasSR_DC">
+      <method v="2">
+        <option name="com.jetbrains.cidr.execution.CidrBuildBeforeRunTaskProvider$BuildBeforeRunTask" enabled="true" />
+      </method>
+    </configuration>
+  </component>
   <component name="TaskManager">
     <task active="true" id="Default" summary="Default task">
       <changelist id="1529fcc4-f0d8-418c-a2b4-bdd0e4c7b37f" name="Changes" comment="" />
@@ -59,10 +150,30 @@
       <option name="presentableId" value="Default" />
       <updated>1781673067983</updated>
       <workItem from="1781673069674" duration="58000" />
+      <workItem from="1781928105890" duration="458000" />
+      <workItem from="1781928590042" duration="32000" />
+      <workItem from="1781928673421" duration="107000" />
+      <workItem from="1781928793569" duration="7346000" />
     </task>
     <servers />
   </component>
   <component name="TypeScriptGeneratedFilesManager">
     <option name="version" value="3" />
+  </component>
+  <component name="VCPKGProject">
+    <isAutomaticCheckingOnLaunch value="false" />
+    <isAutomaticFoundErrors value="true" />
+    <isAutomaticReloadCMake value="true" />
+    <isAutomaticBootstrapAfterUpdate value="false" />
+  </component>
+  <component name="XDebuggerManager">
+    <breakpoint-manager>
+      <breakpoints>
+        <line-breakpoint enabled="true" type="com.jetbrains.cidr.execution.debugger.OCBreakpointType">
+          <url>file://$PROJECT_DIR$/ex_3/src/expr_main.cpp</url>
+          <option name="timeStamp" value="1" />
+        </line-breakpoint>
+      </breakpoints>
+    </breakpoint-manager>
   </component>
 </project>
