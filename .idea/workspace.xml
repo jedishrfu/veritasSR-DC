@@ -5,10 +5,11 @@
   </component>
   <component name="BackendCodeEditorMiscSettings">
     <option name="/Default/Housekeeping/FeatureSuggestion/FeatureSuggestionManager/DisabledSuggesters/=SwitchToGoToActionSuggester/@EntryIndexedValue" value="true" type="bool" />
+    <option name="/Default/Housekeeping/OptionsDialog/SelectedPageId/@EntryValue" value="CppFormatterOtherPage" type="string" />
   </component>
-  <component name="CMakePresetLoader"><![CDATA[{
-  "useNewFormat": true
-}]]></component>
+  <component name="CMakePresetLoader">{
+  &quot;useNewFormat&quot;: true
+}</component>
   <component name="CMakeProjectFlavorService">
     <option name="flavorId" value="CMakePlainProjectFlavor" />
   </component>
@@ -27,35 +28,32 @@
   </component>
   <component name="ChangeListManager">
     <list default="true" id="1529fcc4-f0d8-418c-a2b4-bdd0e4c7b37f" name="Changes" comment="">
-      <change afterPath="$PROJECT_DIR$/ex_3/include/ast_nodes.h" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/ex_3/include/util_code.h" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/.idea/veritasSR-DC.iml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/veritasSR-DC.iml" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/.idea/codeStyles/codeStyleConfig.xml" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/.idea/editor.xml" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/ex_3/CODE_ARCHIVE/old_expr_parser.cpp" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/ex_2/_build.log" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/ex_2/ast_io.cpp" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/ex_2/ast_io.h" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/ex_2/ast_nodes.h" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/ex_2/build.log" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/ex_2/exprgen" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/ex_2/exprgen.cpp" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/ex_2/exprgen.dSYM/Contents/Info.plist" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/ex_2/exprgen.dSYM/Contents/Resources/DWARF/exprgen" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/ex_2/exprgen.dSYM/Contents/Resources/Relocations/aarch64/exprgen.yml" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/ex_2/exprgen_build.log" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/ex_2/gen_x.ast" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/ex_2/gen_x.ast.stats" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/ex_2/infix_parsing_code.h" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/ex_2/logging_code.h" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/ex_2/old-code/main.cpp" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/ex_2/old-code/old-code.txt" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/ex_2/old-code/old_ast_nodes.h" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/ex_2/old-code/old_exprgen.cpp" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/ex_2/runcpp" beforeDir="false" afterPath="$PROJECT_DIR$/ex_3/runcpp" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/ex_2/test_coeff_fit" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/ex_2/test_coeff_fit.cpp" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/ex_2/test_coeff_fit_build.log" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/ex_2/testrun.md" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/ex_2/testrun.mdd" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/CMakeLists.txt" beforeDir="false" afterPath="$PROJECT_DIR$/CMakeLists.txt" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/ex_2/exprgen" beforeDir="false" afterPath="$PROJECT_DIR$/ex_2/exprgen" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/ex_2/exprgen.dSYM/Contents/Resources/DWARF/exprgen" beforeDir="false" afterPath="$PROJECT_DIR$/ex_2/exprgen.dSYM/Contents/Resources/DWARF/exprgen" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/ex_2/gen_x.ast" beforeDir="false" afterPath="$PROJECT_DIR$/ex_2/gen_x.ast" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/ex_2/gen_x.ast.stats" beforeDir="false" afterPath="$PROJECT_DIR$/ex_2/gen_x.ast.stats" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/ex_2/testrun.md" beforeDir="false" afterPath="$PROJECT_DIR$/ex_2/testrun.md" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/ex_3/include/ast_nodes.h" beforeDir="false" afterPath="$PROJECT_DIR$/ex_3/include/ast_nodes.h" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/ex_3/include/ast_nodestats.h" beforeDir="false" afterPath="$PROJECT_DIR$/ex_3/include/ast_nodestats.h" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/ex_3/include/expr_array.h" beforeDir="false" afterPath="$PROJECT_DIR$/ex_3/include/expr_array.h" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/ex_3/include/var_table.h" beforeDir="false" afterPath="$PROJECT_DIR$/ex_3/include/var_table.h" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/ex_3/src/ast_nodes.cpp" beforeDir="false" afterPath="$PROJECT_DIR$/ex_3/src/ast_nodes.cpp" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/ex_3/src/ast_nodestats.cpp" beforeDir="false" afterPath="$PROJECT_DIR$/ex_3/src/ast_nodestats.cpp" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/ex_3/src/base_exprs.cpp" beforeDir="false" afterPath="$PROJECT_DIR$/ex_3/src/base_exprs.cpp" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/ex_3/src/best_fit_coeffs.cpp" beforeDir="false" afterPath="$PROJECT_DIR$/ex_3/src/best_fit_coeffs.cpp" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/ex_3/src/cmd_args.cpp" beforeDir="false" afterPath="$PROJECT_DIR$/ex_3/include/expr_parser.h" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/ex_3/src/evolve_exprs.cpp" beforeDir="false" afterPath="$PROJECT_DIR$/ex_3/src/evolve_exprs.cpp" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/ex_3/src/expr_array.cpp" beforeDir="false" afterPath="$PROJECT_DIR$/ex_3/src/expr_array.cpp" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/ex_3/src/expr_main.cpp" beforeDir="false" afterPath="$PROJECT_DIR$/ex_3/src/expr_main.cpp" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/ex_3/src/expr_parser.cpp" beforeDir="false" afterPath="$PROJECT_DIR$/ex_3/src/expr_parser.cpp" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/ex_3/src/save-load-ast.cpp" beforeDir="false" afterPath="$PROJECT_DIR$/ex_3/src/save-load-ast.cpp" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/ex_3/src/util_code.cpp" beforeDir="false" afterPath="$PROJECT_DIR$/ex_3/src/util_code.cpp" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/ex_3/src/var_table.cpp" beforeDir="false" afterPath="$PROJECT_DIR$/ex_3/src/var_table.cpp" afterDir="false" />
     </list>
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
@@ -97,6 +95,7 @@
     "RunOnceActivity.readMode.enableVisualFormatting": "true",
     "RunOnceActivity.typescript.service.memoryLimit.init": "true",
     "RunOnceActivity.west.config.association.type.startup.service": "true",
+    "SHARE_PROJECT_CONFIGURATION_FILES": "true",
     "cf.first.check.clang-format": "false",
     "cidr.known.project.marker": "true",
     "codeWithMe.voiceChat.enabledByDefault": "false",
@@ -107,11 +106,14 @@
     "node.js.selected.package.tslint": "(autodetect)",
     "nodejs_package_manager_path": "npm",
     "org.rust.first.attach.projects": "true",
+    "run.code.analysis.last.selected.profile": "pProject Default",
+    "settings.editor.selected.configurable": "preferences.sourceCode.C++",
     "vue.rearranger.settings.migration": "true"
   }
 }]]></component>
   <component name="RecentsManager">
     <key name="MoveFile.RECENT_KEYS">
+      <recent name="$PROJECT_DIR$/ex_3/CODE_ARCHIVE" />
       <recent name="$PROJECT_DIR$" />
       <recent name="$PROJECT_DIR$/ex_3" />
       <recent name="$PROJECT_DIR$/ex_2/src" />
@@ -119,22 +121,30 @@
     </key>
   </component>
   <component name="RunManager">
-    <configuration default="true" type="CLionExternalRunConfiguration" factoryName="Application" REDIRECT_INPUT="false" ELEVATE="false" USE_EXTERNAL_CONSOLE="false" EMULATE_TERMINAL="false" PASS_PARENT_ENVS_2="true">
+    <configuration default="true" type="CMakeBoostTestRunConfigurationType" factoryName="Boost Test" REDIRECT_INPUT="false" ELEVATE="false" USE_EXTERNAL_CONSOLE="false" EMULATE_TERMINAL="false" PASS_PARENT_ENVS_2="true" TEST_MODE="SUITE_TEST">
       <method v="2">
-        <option name="CLION.EXTERNAL.BUILD" enabled="true" />
+        <option name="BeforeTestRunTask" enabled="true" />
       </method>
     </configuration>
-    <configuration default="true" type="CMakeBoostTestRunConfigurationType" factoryName="Boost Test" REDIRECT_INPUT="false" ELEVATE="false" USE_EXTERNAL_CONSOLE="false" EMULATE_TERMINAL="false" PASS_PARENT_ENVS_2="true">
-      <method v="2" />
+    <configuration default="true" type="CMakeCatchTestRunConfigurationType" factoryName="Catch Test" REDIRECT_INPUT="false" ELEVATE="false" USE_EXTERNAL_CONSOLE="false" EMULATE_TERMINAL="false" PASS_PARENT_ENVS_2="true" TEST_MODE="SUITE_TEST">
+      <method v="2">
+        <option name="BeforeTestRunTask" enabled="true" />
+      </method>
     </configuration>
-    <configuration default="true" type="CMakeCatchTestRunConfigurationType" factoryName="Catch Test" REDIRECT_INPUT="false" ELEVATE="false" USE_EXTERNAL_CONSOLE="false" EMULATE_TERMINAL="false" PASS_PARENT_ENVS_2="true">
-      <method v="2" />
+    <configuration default="true" type="CMakeDoctestTestRunConfigurationType" factoryName="doctest Test" REDIRECT_INPUT="false" ELEVATE="false" USE_EXTERNAL_CONSOLE="false" EMULATE_TERMINAL="false" PASS_PARENT_ENVS_2="true" TEST_MODE="SUITE_TEST">
+      <method v="2">
+        <option name="BeforeTestRunTask" enabled="true" />
+      </method>
     </configuration>
-    <configuration default="true" type="CMakeDoctestTestRunConfigurationType" factoryName="doctest Test" REDIRECT_INPUT="false" ELEVATE="false" USE_EXTERNAL_CONSOLE="false" EMULATE_TERMINAL="false" PASS_PARENT_ENVS_2="true">
-      <method v="2" />
+    <configuration default="true" type="CMakeGoogleTestRunConfigurationType" factoryName="Google Test" REDIRECT_INPUT="false" ELEVATE="false" USE_EXTERNAL_CONSOLE="false" EMULATE_TERMINAL="false" PASS_PARENT_ENVS_2="true" TEST_MODE="SUITE_TEST">
+      <method v="2">
+        <option name="BeforeTestRunTask" enabled="true" />
+      </method>
     </configuration>
-    <configuration default="true" type="CMakeGoogleTestRunConfigurationType" factoryName="Google Test" REDIRECT_INPUT="false" ELEVATE="false" USE_EXTERNAL_CONSOLE="false" EMULATE_TERMINAL="false" PASS_PARENT_ENVS_2="true">
-      <method v="2" />
+    <configuration default="true" type="CMakeRunConfiguration" factoryName="Application" REDIRECT_INPUT="false" ELEVATE="false" USE_EXTERNAL_CONSOLE="false" EMULATE_TERMINAL="false" PASS_PARENT_ENVS_2="true">
+      <method v="2">
+        <option name="com.jetbrains.cidr.execution.CidrBuildBeforeRunTaskProvider$BuildBeforeRunTask" enabled="true" />
+      </method>
     </configuration>
     <configuration name="veritasSR_DC" type="CMakeRunConfiguration" factoryName="Application" REDIRECT_INPUT="false" ELEVATE="false" USE_EXTERNAL_CONSOLE="false" EMULATE_TERMINAL="false" PASS_PARENT_ENVS_2="true" PROJECT_NAME="veritasSR_DC" TARGET_NAME="veritasSR_DC" CONFIG_NAME="Debug" RUN_TARGET_PROJECT_NAME="veritasSR_DC" RUN_TARGET_NAME="veritasSR_DC">
       <method v="2">
@@ -154,6 +164,9 @@
       <workItem from="1781928590042" duration="32000" />
       <workItem from="1781928673421" duration="107000" />
       <workItem from="1781928793569" duration="7346000" />
+      <workItem from="1781983952634" duration="7310000" />
+      <workItem from="1782030587531" duration="493000" />
+      <workItem from="1782039678648" duration="12746000" />
     </task>
     <servers />
   </component>

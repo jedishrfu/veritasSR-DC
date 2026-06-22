@@ -1,30 +1,13 @@
-#include <stdio.h>
-#include <stdlib.h>
-#include <string.h>
-#include <time.h>
-#include <unistd.h>
-
-#include <string>
-#include <vector>
-#include <set>
-#include <cctype>
-#include <cstdlib>
-#include <sstream>
-#include <iostream>
 #include <cmath>
 
 #include "../include/ast_nodes.h"
-#include "ast_io.h"
-#include "logging_code.h"
-#include "infix_parsing_code.h"
+#include "../include/ast_nodestats.h"
 
-inline void collectCoeffNodes(Node* node, std::vector<Node*>& coeffs)
-{
+inline void collectCoeffNodes(Node* node, std::vector<Node*>& coeffs) {
     if (node == nullptr)
         return;
 
-    if (node->isCoeffNode())
-    {
+    if (node->isCoeffNode()) {
         coeffs.push_back(node);
         return;
     }
@@ -33,8 +16,7 @@ inline void collectCoeffNodes(Node* node, std::vector<Node*>& coeffs)
     collectCoeffNodes(node->getRightChild(), coeffs);
 }
 
-inline std::vector<Node*> extractCoeffNodes(Node* root)
-{
+inline std::vector<Node*> extractCoeffNodes(Node* root) {
     std::vector<Node*> coeffs;
     collectCoeffNodes(root, coeffs);
     return coeffs;
@@ -44,10 +26,9 @@ inline double scoreMSE(
     Node* n,
     int vi,
     float* data,
-    int numFloats)
-{
+    int numFloats) {
     NodeStats ns;
-    computeScore(vi, 0.0, data, numFloats, n, &ns);
+    NodeStats::computeScore(vi, 0.0, data, numFloats, n, &ns);
     return ns.mse;
 }
 
@@ -61,8 +42,7 @@ inline double optimizeCoeffSubset_HillClimbing_Search(
     int numFloats,
     double initialStep,
     double tolerance,
-    int maxIterations)
-{
+    int maxIterations) {
     int count = hi - lo;
 
     if (count <= 0)
@@ -73,8 +53,7 @@ inline double optimizeCoeffSubset_HillClimbing_Search(
     std::vector<double> step(count, initialStep);
 
     // Determine initial sign for this subset
-    for (int i = 0; i < count; i++)
-    {
+    for (int i = 0; i < count; i++) {
         Node* c = coeffs[lo + i];
 
         double original = c->getNodeCoeff();
@@ -96,8 +75,7 @@ inline double optimizeCoeffSubset_HillClimbing_Search(
     }
 
     // Hill-climb this subset
-    for (int iter = 0; iter < maxIterations; iter++)
-    {
+    for (int iter = 0; iter < maxIterations; iter++) {
         double maxStep = 0.0;
 
         for (int i = 0; i < count; i++)
@@ -108,8 +86,7 @@ inline double optimizeCoeffSubset_HillClimbing_Search(
 
         std::vector<double> oldValues(count);
 
-        for (int i = 0; i < count; i++)
-        {
+        for (int i = 0; i < count; i++) {
             Node* c = coeffs[lo + i];
 
             oldValues[i] = c->getNodeCoeff();
@@ -118,15 +95,13 @@ inline double optimizeCoeffSubset_HillClimbing_Search(
 
         double candidateMSE = scoreMSE(n, vi, data, numFloats);
 
-        if (candidateMSE < bestMSE)
-        {
+        if (candidateMSE < bestMSE) {
             bestMSE = candidateMSE;
 
             for (int i = 0; i < count; i++)
                 step[i] *= 2.0;
         }
-        else
-        {
+        else {
             for (int i = 0; i < count; i++)
                 coeffs[lo + i]->setNodeCoeff(oldValues[i]);
 
@@ -136,8 +111,7 @@ inline double optimizeCoeffSubset_HillClimbing_Search(
     }
 
     // Recursive half search
-    if (count > 1)
-    {
+    if (count > 1) {
         int mid = lo + count / 2;
 
         double beforeLeft = scoreMSE(n, vi, data, numFloats);
@@ -161,15 +135,14 @@ inline double optimizeCoeffSubset_HillClimbing_Search(
     return bestMSE;
 }
 
-inline double optimize_NodeCoeffs_HillClimbing_Search(
+double optimize_NodeCoeffs_HillClimbing_Search(
     Node* n,
     int vi,
     float* data,
     int numFloats,
     double initialStep = 1.0,
     double tolerance = 1.0e-6,
-    int maxIterations = 1000)
-{
+    int maxIterations = 1000) {
     if (n == nullptr || data == nullptr || numFloats <= 0)
         return 1.0e99;
 

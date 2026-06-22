@@ -29,13 +29,11 @@ int countNodeCoeffs(const Node* node) {
   return 0;
 }
 
-void setNodeCoeffsRec(Node* node, double* ncv, int& valueNodeCount)
-{
+void setNodeCoeffsRec(Node* node, double* ncv, int& valueNodeCount) {
   if (node == nullptr)
     return;
 
-  switch (node->getKind())
-  {
+  switch (node->getKind()) {
   case NODE_VALUE:
     node->setNodeCoeff(ncv[valueNodeCount]);
     valueNodeCount++;
@@ -55,8 +53,7 @@ void setNodeCoeffsRec(Node* node, double* ncv, int& valueNodeCount)
   }
 }
 
-void setNodeCoeffs(Node* node, double* ncv)
-{
+void setNodeCoeffs(Node* node, double* ncv) {
   if (node == nullptr)
     return;
 
@@ -65,8 +62,7 @@ void setNodeCoeffs(Node* node, double* ncv)
   if (coeffCount == 0)
     return;
 
-  if (ncv == nullptr)
-  {
+  if (ncv == nullptr) {
     logError("ERROR in setNodeCoeffs(): double* ncv is nullptr");
     return;
   }
@@ -119,10 +115,8 @@ int treeDepth(const Node* node) {
   return 0;
 };
 
-double Node::eval() const
-{
-  switch (kind)
-  {
+double Node::eval() const {
+  switch (kind) {
   case NODE_VALUE:
     return cv;
 
@@ -194,13 +188,13 @@ std::string Node::toString() const {
   case NODE_BINARY: {
     std::string vn = lc ? lc->toString() : "?";
 
-    std::string cv = rc ? rc->toString() : "?";
+    std::string tcv = rc ? rc->toString() : "?";
 
     switch (op) {
-    case OP_ADD: return "( " + vn + " + " + cv + " )";
-    case OP_SUB: return "( " + vn + " - " + cv + " )";
-    case OP_MUL: return "( " + vn + " * " + cv + " )";
-    case OP_DIV: return "( " + vn + " / " + cv + " )";
+    case OP_ADD: return "( " + vn + " + " + tcv + " )";
+    case OP_SUB: return "( " + vn + " - " + tcv + " )";
+    case OP_MUL: return "( " + vn + " * " + tcv + " )";
+    case OP_DIV: return "( " + vn + " / " + tcv + " )";
     default: return "?";
     }
   }

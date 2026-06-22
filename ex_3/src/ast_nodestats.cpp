@@ -5,6 +5,9 @@
 #include "../include/ast_nodes.h"
 #include "../include/ast_nodestats.h"
 #include "../include/expr_array.h"
+#include "../include/var_table.h"
+
+extern VarTable varTable;
 
 void NodeStats::computeScore(
   int vi,
@@ -12,8 +15,7 @@ void NodeStats::computeScore(
   float* data,
   int numFloats,
   Node* n,
-  NodeStats* ns)
-{
+  NodeStats* ns) {
   if (ns == nullptr)
     return;
 
@@ -25,15 +27,14 @@ void NodeStats::computeScore(
 
   double peakValue = 0.0;
 
-  for (int i = 0; i < numFloats; i++)
-  {
+  for (int i = 0; i < numFloats; i++) {
     varTable.setValue(vi, static_cast<double>(i));
     double computed = n->eval();
 
-    if (computed != computed)
-    {
-      computed = 1.0e99;
-    }
+    // if (computed != computed)
+    // {
+    //   computed = 1.0e99;
+    // }
 
     double error = computed - data[i];
     double absError = fabs(error);
@@ -42,46 +43,38 @@ void NodeStats::computeScore(
     ns->sumSquaredError += error * error;
     ns->meanOriginal += data[i];
 
-    if (absError > ns->maxAbsError)
-    {
+    if (absError > ns->maxAbsError) {
       ns->maxAbsError = absError;
     }
 
-    if (absError <= tol)
-    {
+    if (absError <= tol) {
       ns->numWithinTol++;
     }
-    else
-    {
+    else {
       ns->numOutsideTol++;
     }
 
-    if (fabs(data[i]) > peakValue)
-    {
+    if (fabs(data[i]) > peakValue) {
       peakValue = fabs(data[i]);
     }
   }
 
-  if (numFloats > 0)
-  {
+  if (numFloats > 0) {
     ns->meanOriginal /= numFloats;
     ns->mae = ns->sumError / numFloats;
     ns->mse = ns->sumSquaredError / numFloats;
     ns->rmse = sqrt(ns->mse);
 
-    if (ns->rmse > 0.0 && peakValue > 0.0)
-    {
+    if (ns->rmse > 0.0 && peakValue > 0.0) {
       ns->psnr = 20.0 * log10(peakValue / ns->rmse);
     }
-    else
-    {
+    else {
       ns->psnr = 999.0;
     }
   }
 }
 
-inline NodeStats averageNodeStats(const ExprArray& pool)
-{
+NodeStats averageNodeStats(const ExprArray& pool) {
   NodeStats avg;
 
   if (pool.items.empty())
@@ -89,8 +82,7 @@ inline NodeStats averageNodeStats(const ExprArray& pool)
 
   int validCount = 0;
 
-  for (const auto es: pool.items)
-  {
+  for (const auto es : pool.items) {
     if (es == nullptr || es->ns == nullptr) continue;
 
     const NodeStats& s = *es->ns;

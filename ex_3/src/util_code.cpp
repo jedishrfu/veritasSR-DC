@@ -2,11 +2,10 @@
 #include <random>
 #include <iostream>
 
-#include "include/util_code.h"
+#include "../include/util_code.h"
 
-double randomDouble(double minVal, double maxVal)
-{
-    static std::random rd;
+double randomDouble(double minVal, double maxVal) {
+    static std::random_device rd;
     static std::mt19937 gen(rd());
 
     std::uniform_real_distribution<double> dist(minVal, maxVal);
@@ -15,9 +14,7 @@ double randomDouble(double minVal, double maxVal)
 };
 
 
-
-void appendFormat(char* buffer, int maxLen, const char* fmt, ...)
-{
+void appendFormat(char* buffer, int maxLen, const char* fmt, ...) {
     if (buffer ==
         nullptr || maxLen <= 0)
         return;
@@ -34,52 +31,45 @@ void appendFormat(char* buffer, int maxLen, const char* fmt, ...)
     buffer[maxLen - 1] = '\0';
 }
 
-void vlogPrint(const char* color, const char* fmt, va_list args)
-{
+void vlogPrint(const char* color, const char* fmt, va_list args) {
     if (!fmt)
         return;
     if (!color)
         color = "";
 
-    if (color[0] != 0 && fmt[0] != '#' && fmt[0] != '-' && fmt[0] != '|')
-    {
+    if (color[0] != 0 && fmt[0] != '#' && fmt[0] != '-' && fmt[0] != '|') {
         printf("<span style='color:%s;'>", color);
         vprintf(fmt, args);
         printf("</span>\n\n");
     }
-    else
-    {
+    else {
         vprintf(fmt, args);
         printf("\n");
     }
 }
 
-void logTrace(const char* fmt, ...)
-{
+void logTrace(const char* fmt, ...) {
     va_list args;
     va_start(args, fmt);
     vlogPrint("darkgreen", fmt, args);
     va_end(args);
 }
 
-void logPrint(const char* fmt, ...)
-{
+void logPrint(const char* fmt, ...) {
     va_list args;
     va_start(args, fmt);
     vlogPrint("", fmt, args);
     va_end(args);
 }
 
-void logNote(const char* fmt, ...)
-{
+void logNote(const char* fmt, ...) {
     va_list args;
     va_start(args, fmt);
     vlogPrint("blue", fmt, args);
     va_end(args);
 }
 
-void logWarning(const char* fmt, ...)
-{
+void logWarn(const char* fmt, ...) {
     printf("\n\nWarning: ");
 
     va_list args;
@@ -88,8 +78,7 @@ void logWarning(const char* fmt, ...)
     va_end(args);
 }
 
-void logError(const char* fmt, ...)
-{
+void logError(const char* fmt, ...) {
     printf("\n\nERROR: ");
 
     va_list args;

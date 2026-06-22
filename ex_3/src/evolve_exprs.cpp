@@ -1,27 +1,20 @@
-#include <stdio.h>
-#include <stdlib.h>
-#include <string.h>
-#include <time.h>
+#include <cstdio>
+#include <cstdlib>
 #include <unistd.h>
 
 #include <string>
 #include <vector>
 #include <set>
-#include <cctype>
-#include <cstdlib>
 #include <sstream>
-#include <iostream>
 #include <cmath>
 
 #include "../include/ast_nodes.h"
-#include "ast_io.h"
-#include "logging_code.h"
-#include "infix_parsing_code.h"
+#include "../include/ast_nodestats.h"
+#include "../include/expr_array.h"
+#include "../include/util_code.h"
 
-static OpKind randomUnaryOp()
-{
-  switch (rand() % 4)
-  {
+static OpKind randomUnaryOp() {
+  switch (rand() % 4) {
   case 0: return OP_SIN;
   case 1: return OP_COS;
   case 2: return OP_EXP;
@@ -31,10 +24,8 @@ static OpKind randomUnaryOp()
   return OP_SIN;
 }
 
-static OpKind randomBinaryOp()
-{
-  switch (rand() % 4)
-  {
+static OpKind randomBinaryOp() {
+  switch (rand() % 4) {
   case 0: return OP_ADD;
   case 1: return OP_SUB;
   case 2: return OP_MUL;
@@ -44,8 +35,7 @@ static OpKind randomBinaryOp()
   return OP_ADD;
 }
 
-static int countOpNodes(const Node* n)
-{
+static int countOpNodes(const Node* n) {
   if (!n) return 0;
 
   if (n->getKind() == NODE_UNARY)
@@ -57,8 +47,7 @@ static int countOpNodes(const Node* n)
   return 0;
 }
 
-static Node* mutateRandomOperatorRec(const Node* src, int target, int& seen)
-{
+static Node* mutateRandomOperatorRec(const Node* src, int target, int& seen) {
   if (!src) return NULL;
 
   NodeKind kind = src->getKind();
@@ -69,12 +58,10 @@ static Node* mutateRandomOperatorRec(const Node* src, int target, int& seen)
   if (kind == NODE_VARIABLE)
     return src->clone();
 
-  if (kind == NODE_UNARY)
-  {
+  if (kind == NODE_UNARY) {
     OpKind op = src->getOp();
 
-    if (seen == target)
-    {
+    if (seen == target) {
       OpKind newOp = op;
 
       while (newOp == op)
@@ -91,12 +78,10 @@ static Node* mutateRandomOperatorRec(const Node* src, int target, int& seen)
     );
   }
 
-  if (kind == NODE_BINARY)
-  {
+  if (kind == NODE_BINARY) {
     OpKind op = src->getOp();
 
-    if (seen == target)
-    {
+    if (seen == target) {
       OpKind newOp = op;
 
       while (newOp == op)
@@ -117,8 +102,7 @@ static Node* mutateRandomOperatorRec(const Node* src, int target, int& seen)
   return src->clone();
 }
 
-static Node* mutateRandomOperator(const Node* src)
-{
+static Node* mutateRandomOperator(const Node* src) {
   int opCount = countOpNodes(src);
 
   if (opCount == 0)
@@ -130,8 +114,7 @@ static Node* mutateRandomOperator(const Node* src)
   return mutateRandomOperatorRec(src, target, seen);
 }
 
-static Node* deleteRandomNodeRec(const Node* src, int target, int& seen)
-{
+static Node* deleteRandomNodeRec(const Node* src, int target, int& seen) {
   if (!src) return NULL;
 
   NodeKind kind = src->getKind();
@@ -142,8 +125,7 @@ static Node* deleteRandomNodeRec(const Node* src, int target, int& seen)
   if (kind == NODE_VARIABLE)
     return src->clone();
 
-  if (kind == NODE_UNARY)
-  {
+  if (kind == NODE_UNARY) {
     if (seen == target)
       return src->getLeftChild() ? src->getLeftChild()->clone() : src->clone();
 
@@ -155,10 +137,8 @@ static Node* deleteRandomNodeRec(const Node* src, int target, int& seen)
     );
   }
 
-  if (kind == NODE_BINARY)
-  {
-    if (seen == target)
-    {
+  if (kind == NODE_BINARY) {
+    if (seen == target) {
       if (rand() % 2 == 0 && src->getLeftChild())
         return src->getLeftChild()->clone();
 
@@ -180,8 +160,7 @@ static Node* deleteRandomNodeRec(const Node* src, int target, int& seen)
   return src->clone();
 }
 
-static Node* deleteRandomNode(const Node* src)
-{
+static Node* deleteRandomNode(const Node* src) {
   int opCount = countOpNodes(src);
 
   if (opCount == 0)
@@ -193,8 +172,7 @@ static Node* deleteRandomNode(const Node* src)
   return deleteRandomNodeRec(src, target, seen);
 }
 
-static int countAllNodes(const Node* n)
-{
+static int countAllNodes(const Node* n) {
   if (!n) return 0;
 
   return 1
@@ -202,8 +180,7 @@ static int countAllNodes(const Node* n)
     + countAllNodes(n->getRightChild());
 }
 
-static int countVariableNodes(const Node* n)
-{
+static int countVariableNodes(const Node* n) {
   if (!n) return 0;
 
   int count = 0;
@@ -217,8 +194,7 @@ static int countVariableNodes(const Node* n)
   return count;
 }
 
-static Node* cloneSubtreeAt(const Node* src, int target, int& seen)
-{
+static Node* cloneSubtreeAt(const Node* src, int target, int& seen) {
   if (!src) return NULL;
 
   if (seen == target)
@@ -239,12 +215,10 @@ static Node* cloneReplacingSubtreeAt(
   const Node* src,
   int target,
   int& seen,
-  const Node* replacement)
-{
+  const Node* replacement) {
   if (!src) return NULL;
 
-  if (seen == target)
-  {
+  if (seen == target) {
     seen++;
     return replacement ? replacement->clone() : NULL;
   }
@@ -259,16 +233,14 @@ static Node* cloneReplacingSubtreeAt(
   if (kind == NODE_VARIABLE)
     return src->clone();
 
-  if (kind == NODE_UNARY)
-  {
+  if (kind == NODE_UNARY) {
     return Node::makeUnary(
       src->getOp(),
       cloneReplacingSubtreeAt(src->getLeftChild(), target, seen, replacement)
     );
   }
 
-  if (kind == NODE_BINARY)
-  {
+  if (kind == NODE_BINARY) {
     return Node::makeBinary(
       src->getOp(),
       cloneReplacingSubtreeAt(src->getLeftChild(), target, seen, replacement),
@@ -279,8 +251,7 @@ static Node* cloneReplacingSubtreeAt(
   return src->clone();
 }
 
-static Node* crossoverSubtrees(const Node* a, const Node* b)
-{
+static Node* crossoverSubtrees(const Node* a, const Node* b) {
   if (!a || !b) return NULL;
 
   int countA = countAllNodes(a);
@@ -306,8 +277,7 @@ static Node* crossoverSubtrees(const Node* a, const Node* b)
   return child;
 }
 
-static Node* makeAffineVariable(int varIndex)
-{
+static Node* makeAffineVariable(int varIndex) {
   double a = randomDouble(-10.0, 10.0);
   double b = randomDouble(-10.0, 10.0);
 
@@ -325,8 +295,7 @@ static Node* makeAffineVariable(int varIndex)
 static Node* mutateRandomVariableToAffineRec(
   const Node* src,
   int target,
-  int& seen)
-{
+  int& seen) {
   if (!src) return NULL;
 
   NodeKind kind = src->getKind();
@@ -334,10 +303,8 @@ static Node* mutateRandomVariableToAffineRec(
   if (kind == NODE_VALUE)
     return Node::makeCoeffValue(src->getNodeCoeff());
 
-  if (kind == NODE_VARIABLE)
-  {
-    if (seen == target)
-    {
+  if (kind == NODE_VARIABLE) {
+    if (seen == target) {
       seen++;
       return makeAffineVariable(src->getVarIndex());
     }
@@ -346,16 +313,14 @@ static Node* mutateRandomVariableToAffineRec(
     return src->clone();
   }
 
-  if (kind == NODE_UNARY)
-  {
+  if (kind == NODE_UNARY) {
     return Node::makeUnary(
       src->getOp(),
       mutateRandomVariableToAffineRec(src->getLeftChild(), target, seen)
     );
   }
 
-  if (kind == NODE_BINARY)
-  {
+  if (kind == NODE_BINARY) {
     return Node::makeBinary(
       src->getOp(),
       mutateRandomVariableToAffineRec(src->getLeftChild(), target, seen),
@@ -366,8 +331,7 @@ static Node* mutateRandomVariableToAffineRec(
   return src->clone();
 }
 
-static Node* mutateRandomVariableToAffine(const Node* src)
-{
+static Node* mutateRandomVariableToAffine(const Node* src) {
   int varCount = countVariableNodes(src);
 
   if (varCount == 0)
@@ -378,8 +342,8 @@ static Node* mutateRandomVariableToAffine(const Node* src)
 
   return mutateRandomVariableToAffineRec(src, target, seen);
 }
-Node* mutateRandomCoeff(Node* parent)
-{
+
+Node* mutateRandomCoeff(Node* parent) {
   if (parent == nullptr)
     return nullptr;
 
@@ -388,17 +352,16 @@ Node* mutateRandomCoeff(Node* parent)
   std::vector<Node*> coeffNodes;
 
   std::function<void(Node*)> collectCoeffs =
-    [&](Node* node)
-    {
-      if (node == nullptr)
-        return;
+    [&](Node* node) {
+    if (node == nullptr)
+      return;
 
-      if (node->getKind() == NODE_VALUE)
-        coeffNodes.push_back(node);
+    if (node->getKind() == NODE_VALUE)
+      coeffNodes.push_back(node);
 
-      collectCoeffs(node->getLeftChild());
-      collectCoeffs(node->getRightChild());
-    };
+    collectCoeffs(node->getLeftChild());
+    collectCoeffs(node->getRightChild());
+  };
 
   collectCoeffs(root);
 
@@ -411,12 +374,10 @@ Node* mutateRandomCoeff(Node* parent)
 
   double oldValue = coeff->getNodeCoeff();
 
-  if (std::fabs(oldValue) < 1.0e-12)
-  {
+  if (std::fabs(oldValue) < 1.0e-12) {
     coeff->setNodeCoeff(randomDouble(-10.0, 10.0));
   }
-  else
-  {
+  else {
     coeff->setNodeCoeff(
       oldValue * randomDouble(0.8, 1.2));
   }
@@ -424,24 +385,21 @@ Node* mutateRandomCoeff(Node* parent)
   return root;
 }
 
-int bucket(int n)
-{
+int bucket(int n) {
   if (n <= 150)
     return 1;
 
   return ((n - 151) / 100) + 2;
 }
 
-ExprArray* evolveExpressions(ExprArray* input)
-{
+ExprArray* evolveExpressions(ExprArray* input) {
   ExprArray* result = new ExprArray();
   std::set<std::string> seen;
 
   if (!input || input->size() == 0)
     return result;
 
-  enum MutationType
-  {
+  enum MutationType {
     MUT_CONST = 0,
     MUT_UNARY,
     MUT_BINARY,
@@ -455,8 +413,7 @@ ExprArray* evolveExpressions(ExprArray* input)
 
   int step = bucket(input->size() / 100);
 
-  for (int i = 0; i < input->size(); i += step)
-  {
+  for (int i = 0; i < input->size(); i += step) {
     if (!input->items[i] || !input->items[i]->n)
       continue;
 
@@ -468,10 +425,8 @@ ExprArray* evolveExpressions(ExprArray* input)
 
     int choice = rand() % NUM_CASES;
 
-    switch (choice)
-    {
-    case MUT_CONST:
-    {
+    switch (choice) {
+    case MUT_CONST: {
       if (countNodeCoeffs(parent) > 0)
         newTree = mutateRandomCoeff(parent);
       else
@@ -480,8 +435,7 @@ ExprArray* evolveExpressions(ExprArray* input)
       break;
     }
 
-    case MUT_UNARY:
-    {
+    case MUT_UNARY: {
       newTree = Node::makeUnary(
         randomUnaryOp(),
         parent->clone()
@@ -490,8 +444,7 @@ ExprArray* evolveExpressions(ExprArray* input)
       break;
     }
 
-    case MUT_BINARY:
-    {
+    case MUT_BINARY: {
       int j = rand() % input->size();
 
       if (j == i && input->size() > 1)
@@ -503,16 +456,14 @@ ExprArray* evolveExpressions(ExprArray* input)
       Node* other = input->items[j]->n;
       OpKind op = randomBinaryOp();
 
-      if (rand() % 2 == 0)
-      {
+      if (rand() % 2 == 0) {
         newTree = Node::makeBinary(
           op,
           parent->clone(),
           other->clone()
         );
       }
-      else
-      {
+      else {
         newTree = Node::makeBinary(
           op,
           other->clone(),
@@ -523,26 +474,22 @@ ExprArray* evolveExpressions(ExprArray* input)
       break;
     }
 
-    case MUT_CHANGE_OP:
-    {
+    case MUT_CHANGE_OP: {
       newTree = mutateRandomOperator(parent);
       break;
     }
 
-    case MUT_DELETE_NODE:
-    {
+    case MUT_DELETE_NODE: {
       newTree = deleteRandomNode(parent);
       break;
     }
 
-    case MUT_VARIABLE_AFFINE:
-    {
+    case MUT_VARIABLE_AFFINE: {
       newTree = mutateRandomVariableToAffine(parent);
       break;
     }
 
-    case MUT_CROSSOVER:
-    {
+    case MUT_CROSSOVER: {
       int j = rand() % input->size();
 
       if (j == i && input->size() > 1)
@@ -566,8 +513,7 @@ ExprArray* evolveExpressions(ExprArray* input)
   return result;
 }
 
-void resetNodeCoeffs(Node* node)
-{
+void resetNodeCoeffs(Node* node) {
   if (!node) return;
 
   if (node->getKind() == NODE_VALUE)
@@ -579,12 +525,10 @@ void resetNodeCoeffs(Node* node)
 
 ExprArray* filterPool(
   ExprArray* input,
-  double cutoffScore)
-{
+  double cutoffScore) {
   ExprArray* result = new ExprArray();
 
-  for (int i = 0; i < input->size(); i++)
-  {
+  for (int i = 0; i < input->size(); i++) {
     ExprStats* es = input->items[i];
 
     if (!es || !es->ns)
@@ -592,8 +536,7 @@ ExprArray* filterPool(
 
     double mse = es->ns->mse;
 
-    if (std::isfinite(mse) && mse < cutoffScore)
-    {
+    if (std::isfinite(mse) && mse < cutoffScore) {
       result->add(es->clone());
     }
   }

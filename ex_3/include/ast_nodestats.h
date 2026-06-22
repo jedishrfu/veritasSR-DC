@@ -1,23 +1,12 @@
 #pragma once
 
-#include <stdio.h>
-#include <stdlib.h>
-#include <string.h>
-#include <time.h>
-#include <unistd.h>
-
 #include <string>
-#include <vector>
-#include <set>
-#include <cctype>
-#include <cstdlib>
 #include <sstream>
 #include <iostream>
-#include <cmath>
-#include <string>
 
-class NodeStats
-{
+#include "../include/ast_nodes.h"
+
+class NodeStats {
 public:
   long count;
 
@@ -39,24 +28,22 @@ public:
 
   NodeStats()
     : count(0),
-    numWithinTol(0),
-    numOutsideTol(0),
-    sumError(0.0),
-    sumSquaredError(0.0),
-    maxAbsError(0.0),
-    meanOriginal(0.0),
-    mae(0.0),
-    mse(0.0),
-    rmse(0.0),
-    psnr(0.0),
-    nodeCount(0),
-    depth(0) {
-  }
+      numWithinTol(0),
+      numOutsideTol(0),
+      sumError(0.0),
+      sumSquaredError(0.0),
+      maxAbsError(0.0),
+      meanOriginal(0.0),
+      mae(0.0),
+      mse(0.0),
+      rmse(0.0),
+      psnr(0.0),
+      nodeCount(0),
+      depth(0) {}
 
-  void computeScore(int vi, double tol, float* data, int numFloats, Node* n, NodeStats* ns);
+  static void computeScore(int vi, double tol, float* data, int numFloats, Node* n, NodeStats* ns);
 
-  std::string toString() const
-  {
+  std::string toString() const {
     std::ostringstream ss;
 
     ss << "count=" << count
@@ -73,4 +60,6 @@ public:
     return ss.str();
   }
 };
+
+NodeStats averageNodeStats(const ExprArray& pool);
 

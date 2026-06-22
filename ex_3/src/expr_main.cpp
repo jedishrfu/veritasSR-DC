@@ -18,38 +18,30 @@
 
 VarTable varTable;
 
-struct CPUTimer
-{
+struct CPUTimer {
   timeval beg, end;
 
-  CPUTimer()
-  {
-  }
+  CPUTimer() {}
 
-  ~CPUTimer()
-  {
-  }
+  ~CPUTimer() {}
 
-  void start() { gettimeofday(&beg, NULL); }
+  void start() { gettimeofday(&beg, nullptr); }
 
-  double elapsed()
-  {
-    gettimeofday(&end, NULL);
+  double elapsed() {
+    gettimeofday(&end, nullptr);
     return end.tv_sec - beg.tv_sec + (end.tv_usec - beg.tv_usec) / 1000000.0;
   }
 };
 
 
-void printHeader()
-{
+void printHeader() {
   logPrint("# Symbolic Regression with Genetic Programming\n\n");
   logPrint("Date: %s // %s\n\n", __DATE__, __TIME__);
   logPrint("C++ Version: %s\n\n", getenv("GPP_VERSION") ? getenv("GPP_VERSION") : "unknown");
 
   char cwd[256];
 
-  if (getcwd(cwd, sizeof(cwd)) != NULL)
-  {
+  if (getcwd(cwd, sizeof(cwd)) != nullptr) {
     char* last = strrchr(cwd, '/');
     logNote("Experiment: %s\n\n", last ? last + 1 : cwd);
   }
@@ -57,20 +49,29 @@ void printHeader()
   logPrint("Author: James McArdle\n\n");
 
   logPrint("This program performs symbolic regression using a simple genetic programming approach.\n\n");
-  logPrint("It reads input data from a binary file, generates mathematical expressions, evaluates them against the data, and evolves the expressions over multiple generations to find better fits.\n\n");
+  logPrint(
+    "It reads input data from a binary file, generates mathematical expressions, evaluates them against the data, and evolves the expressions over multiple generations to find better fits.\n\n");
 }
+
+struct Options
+{
+  std::string input_file;
+  std::string segments_file;
+  std::string decom_file;
+
+  double tol;
+  int maxFloats;
+  int maxGenerations;
+};
 
 int processArgs(
   int argc,
   char* argv[],
-  Options& opts)
-{
+  Options& opts) {
   int opt;
 
-  while ((opt = getopt(argc, argv, "i:z:o:e:n:g:")) != -1)
-  {
-    switch (opt)
-    {
+  while ((opt = getopt(argc, argv, "i:z:o:e:n:g:")) != -1) {
+    switch (opt) {
     case 'i':
       opts.input_file = optarg;
       break;
@@ -104,8 +105,7 @@ int processArgs(
   return 0;
 }
 
-int main(int argc, char* argv[])
-{
+int main(int argc, char* argv[]) {
   srand((unsigned int)time(NULL));
 
   printHeader();
@@ -134,8 +134,7 @@ int main(int argc, char* argv[])
 
   FILE* fp = fopen(opts.input_file.c_str(), "rb");
 
-  if (fp == 0)
-  {
+  if (fp == 0) {
     logError("Unable to open input file: %s", opts.input_file.c_str());
     return 1;
   }
@@ -161,28 +160,24 @@ int main(int argc, char* argv[])
   CPUTimer all_timer;
   all_timer.start();
 
-  for (int generation = 0; generation < opts.maxGenerations; generation++)
-  {
+  for (int generation = 0; generation < opts.maxGenerations; generation++) {
     printf("### Generation %d of %d (cutoff=%g)\n",
-      generation,
-      opts.maxGenerations,
-      cutoffScore);
+           generation,
+           opts.maxGenerations,
+           cutoffScore);
 
     ExprArray* newPool = NULL;
 
     CPUTimer ga_loop_timer;
     ga_loop_timer.start();
 
-    if (generation == 0)
-    {
+    if (generation == 0) {
       exprPool = generateBasicExpressions();
     }
-    else
-    {
+    else {
       int guard = 0;
 
-      while (exprPool->size() < 100 && guard < 20)
-      {
+      while (exprPool->size() < 100 && guard < 20) {
         newPool = evolveExpressions(exprPool);
 
         delete exprPool;
@@ -199,8 +194,7 @@ int main(int argc, char* argv[])
     logPrint("| Expr # | MSE | Nodes | Depth | Expression |");
     logPrint("|--------|-----|-------|-------|------------|");
 
-    for (int i = 0; i < exprPool->size(); i++)
-    {
+    for (int i = 0; i < exprPool->size(); i++) {
       ExprStats* es = exprPool->items[i];
       Node* n = es->n;
 
@@ -218,7 +212,7 @@ int main(int argc, char* argv[])
         1000
       );
 
-      computeScore(
+      NodeStats::computeScore(
         0,
         opts.tol,
         dataIn,
@@ -254,17 +248,15 @@ int main(int argc, char* argv[])
     logPrint("| Expr # | MSE | Nodes | Depth | Expression |");
     logPrint("|--------|-----|-------|-------|------------|");
 
-    if (exprPool->size() == 0)
-    {
+    if (exprPool->size() == 0) {
       logError("\n\nNo expressions survived cutoff.");
       break;
     }
 
-    for (int i = 0; i < exprPool->size(); i++)
-    {
+    for (int i = 0; i < exprPool->size(); i++) {
       NodeStats* score = exprPool->items[i]->ns;
 
-      computeScore(
+      NodeStats::computeScore(
         0,
         opts.tol,
         dataIn,
@@ -282,13 +274,13 @@ int main(int argc, char* argv[])
     }
 
     logPrint("\n\nGeneration %d: %.6f s\n",
-      generation,
-      ga_loop_timer.elapsed());
+             generation,
+             ga_loop_timer.elapsed());
   }
 
   logPrint("All %d generations: %.6f s\n",
-    opts.maxGenerations,
-    all_timer.elapsed());
+           opts.maxGenerations,
+           all_timer.elapsed());
 
   delete exprPool;
   delete[] dataIn;

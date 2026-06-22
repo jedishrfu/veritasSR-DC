@@ -10,21 +10,18 @@ static constexpr uint32_t AST_MAGIC = 0x56535241; // VSRA
 static constexpr uint32_t STAT_MAGIC = 0x56535253; // VSRS
 static constexpr uint32_t AST_VERSION = 1;
 
-struct NodeRecord
-{
+struct NodeRecord {
     int32_t kind;
     int32_t op;
     double cv;
     int32_t vi;
 };
 
-static std::string statsFilename(const std::string& filename)
-{
+static std::string statsFilename(const std::string& filename) {
     return filename + ".stats";
 }
 
-static void writeNode(std::ofstream& out, const Node* n)
-{
+static void writeNode(std::ofstream& out, const Node* n) {
     uint8_t exists = (n != nullptr);
     out.write(reinterpret_cast<const char*>(&exists), sizeof(exists));
 
@@ -43,8 +40,7 @@ static void writeNode(std::ofstream& out, const Node* n)
     writeNode(out, n->getRightChild());
 }
 
-static Node* readNode(std::ifstream& in)
-{
+static Node* readNode(std::ifstream& in) {
     uint8_t exists = 0;
     in.read(reinterpret_cast<char*>(&exists), sizeof(exists));
 
@@ -63,8 +59,7 @@ static Node* readNode(std::ifstream& in)
     auto kind = static_cast<NodeKind>(r.kind);
     auto op = static_cast<OpKind>(r.op);
 
-    switch (kind)
-    {
+    switch (kind) {
     case NODE_VALUE:
         return Node::makeCoeffValue(r.cv);
 
@@ -74,19 +69,17 @@ static Node* readNode(std::ifstream& in)
     case NODE_UNARY:
         return Node::makeUnary(op, readNode(in));
 
-    case NODE_BINARY:
-        {
-            Node* left = readNode(in);
-            Node* right = readNode(in);
-            return Node::makeBinary(op, left, right);
-        }
+    case NODE_BINARY: {
+        Node* left = readNode(in);
+        Node* right = readNode(in);
+        return Node::makeBinary(op, left, right);
+    }
     }
 
     throw std::runtime_error("Invalid NodeKind in AST file.");
 }
 
-static void writeNodeStats(std::ofstream& out, const NodeStats* ns)
-{
+static void writeNodeStats(std::ofstream& out, const NodeStats* ns) {
     NodeStats temp;
 
     if (ns != nullptr)
@@ -110,8 +103,7 @@ static void writeNodeStats(std::ofstream& out, const NodeStats* ns)
     out.write(reinterpret_cast<const char*>(&temp.depth), sizeof(temp.depth));
 }
 
-static NodeStats* readNodeStats(std::ifstream& in)
-{
+static NodeStats* readNodeStats(std::ifstream& in) {
     NodeStats* ns = new NodeStats();
 
     in.read(reinterpret_cast<char*>(&ns->count), sizeof(ns->count));
@@ -131,8 +123,7 @@ static NodeStats* readNodeStats(std::ifstream& in)
     in.read(reinterpret_cast<char*>(&ns->nodeCount), sizeof(ns->nodeCount));
     in.read(reinterpret_cast<char*>(&ns->depth), sizeof(ns->depth));
 
-    if (!in)
-    {
+    if (!in) {
         delete ns;
         throw std::runtime_error("Unexpected EOF while reading NodeStats.");
     }
@@ -142,8 +133,7 @@ static NodeStats* readNodeStats(std::ifstream& in)
 
 static void saveStatsFile(
     const std::string& filename,
-    const ExprArray& expressions)
-{
+    const ExprArray& expressions) {
     std::ofstream out(statsFilename(filename), std::ios::binary);
 
     if (!out)
@@ -157,8 +147,7 @@ static void saveStatsFile(
     out.write(reinterpret_cast<const char*>(&version), sizeof(version));
     out.write(reinterpret_cast<const char*>(&count), sizeof(count));
 
-    for (int i = 0; i < expressions.size(); i++)
-    {
+    for (int i = 0; i < expressions.size(); i++) {
         ExprStats* es = expressions.items[i];
         writeNodeStats(out, es ? es->ns : nullptr);
     }
@@ -166,8 +155,7 @@ static void saveStatsFile(
 
 static NodeStats* loadOneStatsOrNew(
     std::ifstream* statsIn,
-    bool loadNodeStats)
-{
+    bool loadNodeStats) {
     if (!loadNodeStats)
         return new NodeStats();
 
@@ -176,8 +164,7 @@ static NodeStats* loadOneStatsOrNew(
 
 void saveExpressions(
     const std::string& filename,
-    const ExprArray& expressions)
-{
+    const ExprArray& expressions) {
     std::ofstream out(filename, std::ios::binary);
 
     if (!out)
@@ -191,8 +178,7 @@ void saveExpressions(
     out.write(reinterpret_cast<const char*>(&version), sizeof(version));
     out.write(reinterpret_cast<const char*>(&count), sizeof(count));
 
-    for (int i = 0; i < expressions.size(); i++)
-    {
+    for (int i = 0; i < expressions.size(); i++) {
         ExprStats* es = expressions.items[i];
         writeNode(out, es ? es->n : nullptr);
     }
@@ -205,8 +191,7 @@ void saveExpressions(
 
 ExprArray loadExpressions(
     const std::string& filename,
-    bool loadNodeStats)
-{
+    bool loadNodeStats) {
     std::ifstream in(filename, std::ios::binary);
 
     if (!in)
@@ -228,8 +213,7 @@ ExprArray loadExpressions(
 
     std::ifstream statsIn;
 
-    if (loadNodeStats)
-    {
+    if (loadNodeStats) {
         statsIn.open(statsFilename(filename), std::ios::binary);
 
         if (!statsIn)
@@ -255,8 +239,7 @@ ExprArray loadExpressions(
 
     ExprArray result;
 
-    for (uint64_t i = 0; i < count; i++)
-    {
+    for (uint64_t i = 0; i < count; i++) {
         Node* n = readNode(in);
         NodeStats* ns = loadOneStatsOrNew(
             loadNodeStats ? &statsIn : nullptr,

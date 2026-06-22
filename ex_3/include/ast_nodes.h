@@ -1,31 +1,15 @@
 #pragma once
 
-#include <stdio.h>
-#include <math.h>
-#include <stdarg.h>
-#include <string.h>
-#include <stdlib.h>
-#include <time.h>
-
 #include <string>
-#include <sstream>
-#include <iomanip>
-#include <vector>
-#include <random>
-#include <utility>
 
-#include "logging_code.h"
-
-enum NodeKind
-{
+enum NodeKind {
   NODE_VALUE,
   NODE_VARIABLE,
   NODE_UNARY,
   NODE_BINARY
 };
 
-enum OpKind
-{
+enum OpKind {
   OP_NONE,
 
   OP_ADD,
@@ -41,8 +25,7 @@ enum OpKind
 
 class ExprArray;
 
-class Node
-{
+class Node {
 private:
   NodeKind kind;
   OpKind op;
@@ -54,9 +37,7 @@ private:
   Node* rc;
 
   Node(NodeKind k, OpKind o, double cv, int vi, Node* lc, Node* rc)
-    : kind(k), op(o), cv(cv), vi(vi), lc(lc), rc(rc)
-  {
-  }
+    : kind(k), op(o), cv(cv), vi(vi), lc(lc), rc(rc) {}
 
 public:
   ~Node() {
@@ -88,8 +69,6 @@ public:
 
   void setNodeCoeff(double ncv) {
     if (kind == NODE_VALUE) cv = ncv;
-
-    return;
   }
 
   static Node* makeCoeffValue(double cv) {
@@ -114,7 +93,11 @@ public:
   Node* getLeftChild() const { return lc; }
   Node* getRightChild() const { return rc; }
 
-  inline double eval() const;
-  inline std::string toString() const;
+  double eval() const;
+  std::string toString() const;
 };
 
+int countNodeCoeffs(const Node* node);
+void setNodeCoeffs(Node* node, double* ncv);
+int countNodes(const Node* node);
+int treeDepth(const Node* node);

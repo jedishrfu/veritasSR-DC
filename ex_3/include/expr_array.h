@@ -1,52 +1,47 @@
 #pragma once
 
+#include <set>
 #include <string>
 #include <vector>
 
-struct ExprStats
-{
+#include "../include/ast_nodes.h"
+#include "../include/ast_nodestats.h"
+
+struct ExprStats {
   Node* n;
   NodeStats* ns;
 
   ExprStats(Node* node, NodeStats* stats)
-    : n(node), ns(stats)
-  {
-  }
+    : n(node), ns(stats) {}
 
-  ~ExprStats()
-  {
+  ~ExprStats() {
     delete n;
     delete ns;
   }
 
-  ExprStats* clone() const
-  {
+  ExprStats* clone() const {
     Node* newNode = n ? n->clone() : nullptr;
     NodeStats* newStats = ns ? new NodeStats(*ns) : new NodeStats();
 
     return new ExprStats(newNode, newStats);
   }
 
-private:
-  ExprStats(const ExprStats&);
-  ExprStats& operator=(const ExprStats&);
+
+  ExprStats(const ExprStats&) = delete;
+  ExprStats& operator=(const ExprStats&) = delete;
 };
 
 class ExprArray {
-
 public:
   std::vector<ExprStats*> items;
 
   ExprArray(ExprArray&& other) noexcept
-    : items(std::move(other.items))
-  {
+    : items(std::move(other.items)) {
     other.items.clear();
   }
 
-  ExprArray& operator=(ExprArray&& other) noexcept
-  {
-    if (this != &other)
-    {
+  ExprArray& operator=(ExprArray&& other) noexcept {
+    if (this != &other) {
       clear();
       items = std::move(other.items);
       other.items.clear();
@@ -56,9 +51,7 @@ public:
   }
 
 
-  ExprArray() {
-
-  }
+  ExprArray() = default;
 
   ~ExprArray() {
     clear();
@@ -69,8 +62,8 @@ public:
   }
 
   void clear() {
-    for (int i = 0; i < (int)items.size(); i++) {
-      delete items[i];
+    for (auto& item : items) {
+      delete item;
     }
 
     items.clear();
@@ -91,8 +84,7 @@ public:
     return items[index];
   }
 
-private:
-  ExprArray(const ExprArray&);
+  ExprArray(const ExprArray&) = delete;
   ExprArray& operator=(const ExprArray&);
 };
 
@@ -103,3 +95,25 @@ void saveExpressions(
 ExprArray loadExpressions(
   const std::string& filename,
   bool loadNodeStats);
+
+bool addUniqueTree(
+  ExprArray* result,
+  Node* tree,
+  std::set<std::string>& seen);
+
+bool addUniqueExprStats(
+  ExprArray* result,
+  ExprStats* src,
+  std::set<std::string>& seen);
+
+ExprArray* generateBasicExpressions();
+ExprArray* evolveExpressions(ExprArray* input);
+ExprArray* filterPool(ExprArray* input, double cutoffScore);
+double optimize_NodeCoeffs_HillClimbing_Search(
+    Node* n,
+    int vi,
+    float* data,
+    int numFloats,
+    double initialStep = 1.0,
+    double tolerance = 1.0e-6,
+    int maxIterations = 1000);
