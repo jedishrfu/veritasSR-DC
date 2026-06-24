@@ -23,4 +23,6 @@ add_executable(veritasSR_DC
         ex_3/src/var_table.cpp
         ex_3/include/var_table.h
         ex_3/include/expr_parser.h
-        ex_3/src/expr_parser.cpp)
+        ex_3/src/expr_parser.cpp
+        ex_3/src/expr_simplifier.cpp
+        ex_3/include/expr_simplifier.h)

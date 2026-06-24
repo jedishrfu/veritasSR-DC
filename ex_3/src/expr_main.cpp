@@ -11,6 +11,8 @@
 #include "../include/expr_array.h"
 #include "../include/util_code.h"
 #include "../include/var_table.h"
+#include "../include/expr_parser.h"
+#include "../include/expr_simplifier.h"
 
 #define FILENAME_SIZE 256
 #define DEFAULT_COEFF 1
@@ -53,8 +55,7 @@ void printHeader() {
     "It reads input data from a binary file, generates mathematical expressions, evaluates them against the data, and evolves the expressions over multiple generations to find better fits.\n\n");
 }
 
-struct Options
-{
+struct Options {
   std::string input_file;
   std::string segments_file;
   std::string decom_file;
@@ -172,7 +173,42 @@ int main(int argc, char* argv[]) {
     ga_loop_timer.start();
 
     if (generation == 0) {
-      exprPool = generateBasicExpressions();
+      // if (!true) {
+      //   Node* my_expr = parseExpression("ax + b", makeParserVariableNames());
+      //   if (getLastParseError() != "") {
+      //     ExprStats* my_expr_stats = new ExprStats(my_expr,nullptr);
+      //     exprPool->add(my_expr_stats);
+      //   }
+      // }
+      // else {
+      std::vector<std::string> basicExpressions = {
+        "x",
+        "y",
+        "z",
+
+        "x+1",
+        "x-1",
+        "x*2",
+        "x/2",
+
+        "x+y",
+        "x-y",
+        "x*y",
+        "x/y",
+
+        "sin(x)",
+        "cos(x)",
+        "tan(x)",
+        "exp(x)",
+        "log(x)",
+        "sqrt(abs(x))",
+
+        "x*x",
+        "x*x*x",
+        "(x+y)/2",
+        "(x-y)*(x+y)"
+      };
+      exprPool = generateBasicExpressionsFromText(basicExpressions);
     }
     else {
       int guard = 0;
@@ -181,14 +217,25 @@ int main(int argc, char* argv[]) {
         newPool = evolveExpressions(exprPool);
 
         delete exprPool;
+        ExprSimplifier::simplifyExpressionArray(*newPool, false);
         exprPool = newPool;
-
         guard++;
       }
     }
+    if (generation == 9) {
+      saveExpressions("gen_x.ast", *exprPool);
+      ExprArray* testReload = loadExpressions("gen_x.ast", false);
 
-    saveExpressions("gen_x.ast", *exprPool);
-    ExprArray testReload = loadExpressions("gen_x.ast", true);
+      for (int i = 0; i < exprPool->size(); i++) {
+        std::string s1 = exprPool->items[i]->n->toString();
+        std::string s2 = testReload->items[i]->n->toString();
+
+        if (s1 != s2) {
+          std::cout << "\n- Expected: " << s1 << '\n';
+          std::cout << "\n- Actual:   " << s2 << '\n';
+        }
+      }
+    }
 
     logPrint("#### Generated %d expressions", exprPool->items.size());
     logPrint("| Expr # | MSE | Nodes | Depth | Expression |");
@@ -278,12 +325,23 @@ int main(int argc, char* argv[]) {
              ga_loop_timer.elapsed());
   }
 
-  logPrint("All %d generations: %.6f s\n",
-           opts.maxGenerations,
-           all_timer.elapsed());
+  logPrint(
+    "All %d generations: %.6f s\n"
+    ,
+    opts
+    .
+    maxGenerations
+    ,
+    all_timer
+    .
+    elapsed()
+  );
 
-  delete exprPool;
-  delete[] dataIn;
+  delete
+    exprPool;
+  delete
+    [] dataIn;
 
-  return 0;
+  return
+    0;
 }

@@ -92,9 +92,9 @@ void saveExpressions(
   const std::string& filename,
   const ExprArray& expressions);
 
-ExprArray loadExpressions(
-  const std::string& filename,
-  bool loadNodeStats);
+ExprArray* loadExpressions(
+    const std::string& filename,
+    bool loadNodeStats);
 
 bool addUniqueTree(
   ExprArray* result,
@@ -106,9 +106,15 @@ bool addUniqueExprStats(
   ExprStats* src,
   std::set<std::string>& seen);
 
+ExprArray* generateBasicExpressionsFromText(
+    const std::vector<std::string>& expressionTexts);
+
 ExprArray* generateBasicExpressions();
+
 ExprArray* evolveExpressions(ExprArray* input);
+
 ExprArray* filterPool(ExprArray* input, double cutoffScore);
+
 double optimize_NodeCoeffs_HillClimbing_Search(
     Node* n,
     int vi,

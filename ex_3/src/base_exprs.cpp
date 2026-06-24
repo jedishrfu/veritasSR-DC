@@ -10,7 +10,15 @@
 
 extern VarTable varTable;
 
-ExprArray* generateBasicExpressions() {
+// Build an ExprArray by parsing a list of text-based infix expressions.
+// Example input strings:
+//   "x"
+//   "sin(x)"
+//   "2 * x + 1"
+//   "sin(x) + cos(x)"
+ExprArray* generateBasicExpressionsFromText(
+    const std::vector<std::string>& expressionTexts)
+{
     ensureDefaultVariables();
 
     auto* result = new ExprArray();
@@ -20,63 +28,13 @@ ExprArray* generateBasicExpressions() {
 
     logPrint("VarCount = %d", varTable.getCount());
 
-    std::vector<std::string> templates;
-
-    for (const auto& x : vars) {
-        templates.push_back(x);
-        templates.push_back("sin(" + x + ")");
-        templates.push_back("cos(" + x + ")");
-        templates.push_back("exp(" + x + ")");
-        templates.push_back("log(" + x + ")");
-
-        templates.push_back(x + " + 1");
-        templates.push_back(x + " - 1");
-        templates.push_back("1 - " + x);
-        templates.push_back(x + " * 2");
-        templates.push_back(x + " / 2");
-
-        templates.push_back("2 * " + x);
-        templates.push_back("0.5 * " + x);
-        templates.push_back("2 * " + x + " + 1");
-        templates.push_back("0.5 * " + x + " + 1");
-
-        templates.push_back(x + " * " + x);
-        templates.push_back(x + " * " + x + " + " + x);
-        templates.push_back("sin(" + x + ") + " + x);
-        templates.push_back("cos(" + x + ") + " + x);
-        templates.push_back("sin(" + x + ") * " + x);
-        templates.push_back("cos(" + x + ") * " + x);
-        templates.push_back("exp(" + x + ") + " + x);
-        templates.push_back("log(" + x + ") + " + x);
-
-        templates.push_back("sin(" + x + ") + cos(" + x + ")");
-        templates.push_back("sin(" + x + ") * cos(" + x + ")");
-    }
-
-    // if (vars.size() >= 2) {
-    //     for (size_t i = 0; i + 1 < vars.size(); i++) {
-    //         const std::string& x = vars[i];
-    //         const std::string& y = vars[i + 1];
-    //
-    //         templates.push_back(x + " + " + y);
-    //         templates.push_back(x + " - " + y);
-    //         templates.push_back(x + " * " + y);
-    //         templates.push_back(x + " / " + y);
-    //
-    //         templates.push_back("sin(" + x + ") + cos(" + y + ")");
-    //         templates.push_back("sin(" + x + ") * exp(" + y + ")");
-    //         templates.push_back("(" + x + " + " + y + ") * (" + x + " - " + y + ")");
-    //         templates.push_back("2 * " + x + " + 3 * " + y);
-    //     }
-    // }
-
-    for (auto& i : templates) {
-        Node* root = parseExpression(i, vars);
+    for (const std::string& exprText : expressionTexts) {
+        Node* root = parseExpression(exprText, vars);
 
         if (!root) {
             logWarn(
                 "Parser rejected expression '%s': %s",
-                i.c_str(),
+                exprText.c_str(),
                 getLastParseError().c_str());
             continue;
         }
@@ -84,7 +42,70 @@ ExprArray* generateBasicExpressions() {
         addUniqueTree(result, root, seen);
     }
 
-    logPrint("\nInitial pool generated from infix templates: %d expressions", result->size());
+    logPrint(
+        "\nInitial pool generated from text expressions: %d expressions",
+        result->size());
 
     return result;
+}
+
+// Default seed-expression generator.
+// This keeps the old public interface, but now the actual AST construction
+// happens through generateBasicExpressionsFromText().
+ExprArray* generateBasicExpressions()
+{
+    ensureDefaultVariables();
+
+    std::vector<std::string> vars = makeParserVariableNames();
+    std::vector<std::string> expressionTexts;
+
+    for (const std::string& x : vars) {
+        expressionTexts.push_back(x);
+        expressionTexts.push_back("sin(" + x + ")");
+        expressionTexts.push_back("cos(" + x + ")");
+        expressionTexts.push_back("exp(" + x + ")");
+        expressionTexts.push_back("log(" + x + ")");
+
+        expressionTexts.push_back(x + " + 1");
+        expressionTexts.push_back(x + " - 1");
+        expressionTexts.push_back("1 - " + x);
+        expressionTexts.push_back(x + " * 2");
+        expressionTexts.push_back(x + " / 2");
+
+        expressionTexts.push_back("2 * " + x);
+        expressionTexts.push_back("0.5 * " + x);
+        expressionTexts.push_back("2 * " + x + " + 1");
+        expressionTexts.push_back("0.5 * " + x + " + 1");
+
+        expressionTexts.push_back(x + " * " + x);
+        expressionTexts.push_back(x + " * " + x + " + " + x);
+        expressionTexts.push_back("sin(" + x + ") + " + x);
+        expressionTexts.push_back("cos(" + x + ") + " + x);
+        expressionTexts.push_back("sin(" + x + ") * " + x);
+        expressionTexts.push_back("cos(" + x + ") * " + x);
+        expressionTexts.push_back("exp(" + x + ") + " + x);
+        expressionTexts.push_back("log(" + x + ") + " + x);
+
+        expressionTexts.push_back("sin(" + x + ") + cos(" + x + ")");
+        expressionTexts.push_back("sin(" + x + ") * cos(" + x + ")");
+    }
+
+    if (vars.size() >= 2) {
+        for (size_t i = 0; i + 1 < vars.size(); i++) {
+            const std::string& x = vars[i];
+            const std::string& y = vars[i + 1];
+
+            expressionTexts.push_back(x + " + " + y);
+            expressionTexts.push_back(x + " - " + y);
+            expressionTexts.push_back(x + " * " + y);
+            expressionTexts.push_back(x + " / " + y);
+
+            expressionTexts.push_back("sin(" + x + ") + cos(" + y + ")");
+            expressionTexts.push_back("sin(" + x + ") * exp(" + y + ")");
+            expressionTexts.push_back("(" + x + " + " + y + ") * (" + x + " - " + y + ")");
+            expressionTexts.push_back("2 * " + x + " + 3 * " + y);
+        }
+    }
+
+    return generateBasicExpressionsFromText(expressionTexts);
 }

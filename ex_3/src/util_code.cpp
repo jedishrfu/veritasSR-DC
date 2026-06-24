@@ -1,8 +1,11 @@
 #include <string>
 #include <random>
 #include <iostream>
+#include <iomanip>
 
 #include "../include/util_code.h"
+
+#include <fstream>
 
 double randomDouble(double minVal, double maxVal) {
     static std::random_device rd;
@@ -19,7 +22,7 @@ void appendFormat(char* buffer, int maxLen, const char* fmt, ...) {
         nullptr || maxLen <= 0)
         return;
 
-    int len = (int)strlen(buffer);
+    int len = static_cast<int>(strlen(buffer));
     if (len >= maxLen - 1)
         return;
 
@@ -29,6 +32,20 @@ void appendFormat(char* buffer, int maxLen, const char* fmt, ...) {
     va_end(args);
 
     buffer[maxLen - 1] = '\0';
+}
+
+void writeCsvText(const std::string& filename, const std::string& text) {
+    std::ofstream fout(filename);
+
+    if (!fout) throw std::runtime_error("Cannot open for writing: " + filename);
+    fout << std::fixed << std::setprecision(6);
+    fout << "# start,end,degree,a0,a1,a2,a3,a4\n";
+    fout << text;
+    // for (const auto& s : segs) {
+    //     fout << s.start << "," << s.end << "," << s.degree;
+    //     for (int j=0; j<COEFF_CAP; ++j) fout << "," << s.coeff[j];
+    //     fout << "\n";
+    // }
 }
 
 void vlogPrint(const char* color, const char* fmt, va_list args) {

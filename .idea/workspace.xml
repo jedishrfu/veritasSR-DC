@@ -27,33 +27,18 @@
     </configurations>
   </component>
   <component name="ChangeListManager">
-    <list default="true" id="1529fcc4-f0d8-418c-a2b4-bdd0e4c7b37f" name="Changes" comment="">
-      <change afterPath="$PROJECT_DIR$/.idea/codeStyles/codeStyleConfig.xml" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/.idea/editor.xml" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/ex_3/CODE_ARCHIVE/old_expr_parser.cpp" afterDir="false" />
+    <list default="true" id="1529fcc4-f0d8-418c-a2b4-bdd0e4c7b37f" name="Changes" comment="reorganized the code">
+      <change afterPath="$PROJECT_DIR$/ex_3/include/expr_simplifier.h" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/ex_3/src/expr_simplifier.cpp" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/CMakeLists.txt" beforeDir="false" afterPath="$PROJECT_DIR$/CMakeLists.txt" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/ex_2/exprgen" beforeDir="false" afterPath="$PROJECT_DIR$/ex_2/exprgen" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/ex_2/exprgen.dSYM/Contents/Resources/DWARF/exprgen" beforeDir="false" afterPath="$PROJECT_DIR$/ex_2/exprgen.dSYM/Contents/Resources/DWARF/exprgen" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/ex_2/gen_x.ast" beforeDir="false" afterPath="$PROJECT_DIR$/ex_2/gen_x.ast" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/ex_2/gen_x.ast.stats" beforeDir="false" afterPath="$PROJECT_DIR$/ex_2/gen_x.ast.stats" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/ex_2/testrun.md" beforeDir="false" afterPath="$PROJECT_DIR$/ex_2/testrun.md" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/ex_3/include/ast_nodes.h" beforeDir="false" afterPath="$PROJECT_DIR$/ex_3/include/ast_nodes.h" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/ex_3/include/ast_nodestats.h" beforeDir="false" afterPath="$PROJECT_DIR$/ex_3/include/ast_nodestats.h" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/ex_3/include/expr_array.h" beforeDir="false" afterPath="$PROJECT_DIR$/ex_3/include/expr_array.h" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/ex_3/include/var_table.h" beforeDir="false" afterPath="$PROJECT_DIR$/ex_3/include/var_table.h" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/ex_3/src/ast_nodes.cpp" beforeDir="false" afterPath="$PROJECT_DIR$/ex_3/src/ast_nodes.cpp" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/ex_3/src/ast_nodestats.cpp" beforeDir="false" afterPath="$PROJECT_DIR$/ex_3/src/ast_nodestats.cpp" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/ex_3/include/expr_parser.h" beforeDir="false" afterPath="$PROJECT_DIR$/ex_3/include/expr_parser.h" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/ex_3/src/base_exprs.cpp" beforeDir="false" afterPath="$PROJECT_DIR$/ex_3/src/base_exprs.cpp" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/ex_3/src/best_fit_coeffs.cpp" beforeDir="false" afterPath="$PROJECT_DIR$/ex_3/src/best_fit_coeffs.cpp" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/ex_3/src/cmd_args.cpp" beforeDir="false" afterPath="$PROJECT_DIR$/ex_3/include/expr_parser.h" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/ex_3/src/evolve_exprs.cpp" beforeDir="false" afterPath="$PROJECT_DIR$/ex_3/src/evolve_exprs.cpp" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/ex_3/src/expr_array.cpp" beforeDir="false" afterPath="$PROJECT_DIR$/ex_3/src/expr_array.cpp" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/ex_3/src/expr_main.cpp" beforeDir="false" afterPath="$PROJECT_DIR$/ex_3/src/expr_main.cpp" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/ex_3/src/expr_parser.cpp" beforeDir="false" afterPath="$PROJECT_DIR$/ex_3/src/expr_parser.cpp" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/ex_3/src/save-load-ast.cpp" beforeDir="false" afterPath="$PROJECT_DIR$/ex_3/src/save-load-ast.cpp" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/ex_3/src/util_code.cpp" beforeDir="false" afterPath="$PROJECT_DIR$/ex_3/src/util_code.cpp" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/ex_3/src/var_table.cpp" beforeDir="false" afterPath="$PROJECT_DIR$/ex_3/src/var_table.cpp" afterDir="false" />
     </list>
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
@@ -67,8 +52,23 @@
   <component name="Git.Settings">
     <option name="RECENT_GIT_ROOT_PATH" value="$PROJECT_DIR$" />
   </component>
+  <component name="GitHubPullRequestSearchHistory"><![CDATA[{
+  "lastFilter": {
+    "state": "OPEN",
+    "assignee": "jedishrfu"
+  }
+}]]></component>
+  <component name="GithubPullRequestsUISettings"><![CDATA[{
+  "selectedUrlAndAccountId": {
+    "url": "https://github.com/jedishrfu/veritasSR-DC.git",
+    "accountId": "277436b6-baef-4399-bb4e-139101920739"
+  }
+}]]></component>
   <component name="MacroExpansionManager">
     <option name="directoryName" value="WkgyjceX" />
+  </component>
+  <component name="ProblemsViewState">
+    <option name="selectedTabId" value="CurrentFile" />
   </component>
   <component name="ProjectApplicationVersion">
     <option name="ide" value="CLion" />
@@ -113,11 +113,11 @@
 }]]></component>
   <component name="RecentsManager">
     <key name="MoveFile.RECENT_KEYS">
+      <recent name="$PROJECT_DIR$/ex_3/src" />
+      <recent name="$PROJECT_DIR$/ex_3/include" />
       <recent name="$PROJECT_DIR$/ex_3/CODE_ARCHIVE" />
       <recent name="$PROJECT_DIR$" />
       <recent name="$PROJECT_DIR$/ex_3" />
-      <recent name="$PROJECT_DIR$/ex_2/src" />
-      <recent name="$PROJECT_DIR$/ex_2/include" />
     </key>
   </component>
   <component name="RunManager">
@@ -166,8 +166,17 @@
       <workItem from="1781928793569" duration="7346000" />
       <workItem from="1781983952634" duration="7310000" />
       <workItem from="1782030587531" duration="493000" />
-      <workItem from="1782039678648" duration="12746000" />
+      <workItem from="1782039678648" duration="32205000" />
     </task>
+    <task id="LOCAL-00001" summary="reorganized the code">
+      <option name="closed" value="true" />
+      <created>1782122326669</created>
+      <option name="number" value="00001" />
+      <option name="presentableId" value="LOCAL-00001" />
+      <option name="project" value="LOCAL" />
+      <updated>1782122326669</updated>
+    </task>
+    <option name="localTasksCounter" value="2" />
     <servers />
   </component>
   <component name="TypeScriptGeneratedFilesManager">
@@ -178,6 +187,10 @@
     <isAutomaticFoundErrors value="true" />
     <isAutomaticReloadCMake value="true" />
     <isAutomaticBootstrapAfterUpdate value="false" />
+  </component>
+  <component name="VcsManagerConfiguration">
+    <MESSAGE value="reorganized the code" />
+    <option name="LAST_COMMIT_MESSAGE" value="reorganized the code" />
   </component>
   <component name="XDebuggerManager">
     <breakpoint-manager>
