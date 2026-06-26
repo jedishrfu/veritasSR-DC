@@ -1,5 +1,8 @@
 #include "../include/expr_parser.h"
 
+#include <iostream>
+#include <ostream>
+
 static std::string g_parseError;
 
 const std::string& getLastParseError() {
@@ -124,6 +127,17 @@ Node* ExprParser::parseMulDiv() {
       }
 
       left = Node::makeBinary(OP_DIV, left, right);
+    }
+    else if (match('^')) {
+      Node* right = parseUnary();
+
+      if (!right) {
+        delete left;
+        setError("Missing right operand after ^");
+        return nullptr;
+      }
+
+      left = Node::makeBinary(OP_POW, left, right);
     }
     else {
       break;
@@ -275,6 +289,10 @@ Node* ExprParser::parseVariable() {
       return Node::makeVariable((int)i);
   }
 
+  if (name == "a") return Node::makeCoeffValue(3.0);
+  if (name == "b") return Node::makeCoeffValue(4.0);
+  if (name == "c") return Node::makeCoeffValue(5.0);
+
   setError("Unknown variable: " + name);
   return nullptr;
 }
@@ -285,5 +303,12 @@ Node* parseExpression(
   g_parseError.clear();
 
   ExprParser parser(exprText, validVariableNames);
-  return parser.parse();
+  Node* expr = parser.parse();
+
+  // std::string exprtext = parser.getText();
+  // std::cout << "\n- " << exprtext << std::endl;
+  // if (expr) {
+  //   std::cout << "\n- " << expr->toString() << std::endl;
+  // }
+  return expr;
 }

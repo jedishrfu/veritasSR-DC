@@ -107,7 +107,7 @@ int processArgs(
 }
 
 int main(int argc, char* argv[]) {
-  srand((unsigned int)time(NULL));
+  srand((unsigned int)time(nullptr));
 
   printHeader();
 
@@ -156,7 +156,7 @@ int main(int argc, char* argv[]) {
 
   logNote("\n\nRead in %zu floats\n\n", count);
 
-  ExprArray* exprPool = NULL;
+  ExprArray* exprPool = nullptr;
 
   CPUTimer all_timer;
   all_timer.start();
@@ -167,64 +167,52 @@ int main(int argc, char* argv[]) {
            opts.maxGenerations,
            cutoffScore);
 
-    ExprArray* newPool = NULL;
+    ExprArray* newPool = nullptr;
 
     CPUTimer ga_loop_timer;
     ga_loop_timer.start();
 
     if (generation == 0) {
-      // if (!true) {
-      //   Node* my_expr = parseExpression("ax + b", makeParserVariableNames());
-      //   if (getLastParseError() != "") {
-      //     ExprStats* my_expr_stats = new ExprStats(my_expr,nullptr);
-      //     exprPool->add(my_expr_stats);
-      //   }
-      // }
-      // else {
       std::vector<std::string> basicExpressions = {
         "x",
         "y",
-        "z",
 
-        "x+1",
-        "x-1",
-        "x*2",
-        "x/2",
-
-        "x+y",
-        "x-y",
-        "x*y",
-        "x/y",
+        "a*x+b^c",
+        "x+0",
+        "x-2",
+        "x*1",
+        "x/b",
 
         "sin(x)",
         "cos(x)",
         "tan(x)",
         "exp(x)",
         "log(x)",
-        "sqrt(abs(x))",
 
+        "sqrt(abs(x))",
         "x*x",
         "x*x*x",
-        "(x+y)/2",
-        "(x-y)*(x+y)"
+        "(a*x+b)*(c*x+a)"
       };
       exprPool = generateBasicExpressionsFromText(basicExpressions);
+      // ExprSimplifier::simplifyExpressionArray(*exprPool, true);
     }
     else {
       int guard = 0;
-
-      while (exprPool->size() < 100 && guard < 20) {
+      do {
         newPool = evolveExpressions(exprPool);
 
         delete exprPool;
         ExprSimplifier::simplifyExpressionArray(*newPool, false);
         exprPool = newPool;
         guard++;
-      }
+      } while (exprPool->size() < 20 && guard < 4);
+
     }
     if (generation == 9) {
       saveExpressions("gen_x.ast", *exprPool);
-      ExprArray* testReload = loadExpressions("gen_x.ast", false);
+      ExprArray* testReload = loadExpressions("gen_x.ast", true);
+      exprPool = testReload;
 
       for (int i = 0; i < exprPool->size(); i++) {
         std::string s1 = exprPool->items[i]->n->toString();

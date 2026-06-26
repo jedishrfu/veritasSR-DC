@@ -17,7 +17,6 @@ add_executable(veritasSR_DC
         ex_3/src/expr_array.cpp
         ex_3/include/expr_array.h
         ex_3/src/expr_main.cpp
-        ex_3/CODE_ARCHIVE/old_expr_parser.cpp
         ex_3/src/util_code.cpp
         ex_3/include/util_code.h
         ex_3/src/var_table.cpp

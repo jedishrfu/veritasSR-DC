@@ -28,17 +28,23 @@
   </component>
   <component name="ChangeListManager">
     <list default="true" id="1529fcc4-f0d8-418c-a2b4-bdd0e4c7b37f" name="Changes" comment="reorganized the code">
-      <change afterPath="$PROJECT_DIR$/ex_3/include/expr_simplifier.h" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/ex_3/src/expr_simplifier.cpp" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/CMakeLists.txt" beforeDir="false" afterPath="$PROJECT_DIR$/CMakeLists.txt" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/ex_3/include/expr_array.h" beforeDir="false" afterPath="$PROJECT_DIR$/ex_3/include/expr_array.h" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/ex_3/include/expr_parser.h" beforeDir="false" afterPath="$PROJECT_DIR$/ex_3/include/expr_parser.h" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/ex_3/src/base_exprs.cpp" beforeDir="false" afterPath="$PROJECT_DIR$/ex_3/src/base_exprs.cpp" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/ex_3/CODE_ARCHIVE/main.cpp" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/ex_3/CODE_ARCHIVE/old-code.txt" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/ex_3/CODE_ARCHIVE/old_ast_nodes.h" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/ex_3/CODE_ARCHIVE/old_expr_parser.cpp" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/ex_3/CODE_ARCHIVE/old_exprgen.cpp" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/ex_3/CODE_ARCHIVE/test_coeff_fit.cpp" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/ex_3/exprgen" beforeDir="false" afterPath="$PROJECT_DIR$/ex_3/exprgen" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/ex_3/exprgen.dSYM/Contents/Resources/DWARF/exprgen" beforeDir="false" afterPath="$PROJECT_DIR$/ex_3/exprgen.dSYM/Contents/Resources/DWARF/exprgen" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/ex_3/gen_x.ast" beforeDir="false" afterPath="$PROJECT_DIR$/ex_3/gen_x.ast" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/ex_3/include/ast_nodes.h" beforeDir="false" afterPath="$PROJECT_DIR$/ex_3/include/ast_nodes.h" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/ex_3/src/ast_nodes.cpp" beforeDir="false" afterPath="$PROJECT_DIR$/ex_3/src/ast_nodes.cpp" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/ex_3/src/expr_main.cpp" beforeDir="false" afterPath="$PROJECT_DIR$/ex_3/src/expr_main.cpp" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/ex_3/src/expr_parser.cpp" beforeDir="false" afterPath="$PROJECT_DIR$/ex_3/src/expr_parser.cpp" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/ex_3/src/save-load-ast.cpp" beforeDir="false" afterPath="$PROJECT_DIR$/ex_3/src/save-load-ast.cpp" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/ex_3/src/util_code.cpp" beforeDir="false" afterPath="$PROJECT_DIR$/ex_3/src/util_code.cpp" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/ex_3/testrun.md" beforeDir="false" afterPath="$PROJECT_DIR$/ex_3/testrun.md" afterDir="false" />
     </list>
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
@@ -166,7 +172,7 @@
       <workItem from="1781928793569" duration="7346000" />
       <workItem from="1781983952634" duration="7310000" />
       <workItem from="1782030587531" duration="493000" />
-      <workItem from="1782039678648" duration="32205000" />
+      <workItem from="1782039678648" duration="46586000" />
     </task>
     <task id="LOCAL-00001" summary="reorganized the code">
       <option name="closed" value="true" />

@@ -144,6 +144,7 @@ double Node::eval() const {
     case OP_SUB: return a - b;
     case OP_MUL: return a * b;
     case OP_DIV: return fabs(b) < 1e-12 ? 0.0 : a / b;
+    case OP_POW: return pow(a, b);
     default: return 0.0;
     }
   }
@@ -195,6 +196,7 @@ std::string Node::toString() const {
     case OP_SUB: return "( " + vn + " - " + tcv + " )";
     case OP_MUL: return "( " + vn + " * " + tcv + " )";
     case OP_DIV: return "( " + vn + " / " + tcv + " )";
+    case OP_POW: return "( " + vn + " / " + tcv + " )";
     default: return "?";
     }
   }

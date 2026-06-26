@@ -315,7 +315,7 @@ ExprArray* loadExpressions(const std::string& filename,
             auto* n = readNode(in);
             auto* ns = loadOneStatsOrNew(statsAvailable ? &statsIn : nullptr,
                                          statsAvailable);
-            std::cout << "Loading expression: " << i << " -> " << n->toString() << '\n';
+            std::cout << "- Loading expression: " << i << " -> " << n->toString() << '\n';
             result->add(new ExprStats(n, ns));
         }
     } catch (const std::runtime_error& e) {
