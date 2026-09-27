@@ -1,0 +1,2 @@
+#!/bin/zsh
+grep -v '\[COEFF_TRACE\]' testrun.md > clean_testrun.md

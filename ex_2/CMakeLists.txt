@@ -1,0 +1,6 @@
+add_executable(ex2_exprgen exprgen.cpp ast_io.cpp)
+add_executable(ex2_test_coeff_fit test_coeff_fit.cpp ast_io.cpp)
+foreach(target IN ITEMS ex2_exprgen ex2_test_coeff_fit)
+    target_include_directories(${target} PRIVATE "${CMAKE_CURRENT_SOURCE_DIR}")
+    target_link_libraries(${target} PRIVATE sr_build_options)
+endforeach()

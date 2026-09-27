@@ -1,0 +1,11 @@
+.DS_store
+*.dSYM/*
+*/build/*
+*/outputs/*
+*/testrpts/*
+*/testdata/*
+
+# Local CMake outputs and machine-specific presets
+/build/
+/cmake-build-*/
+CMakeUserPresets.json

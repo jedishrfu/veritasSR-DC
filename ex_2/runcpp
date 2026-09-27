@@ -1,0 +1,13 @@
+#!/bin/sh
+set -eu
+experiment_dir=$(CDPATH= cd -- "$(dirname -- "$0")" && pwd)
+case "${1:-}" in
+    exprgen) target=ex2_exprgen ;;
+    test_coeff_fit) target=ex2_test_coeff_fit ;;
+    *) echo "Usage: $0 {exprgen|test_coeff_fit}" >&2; exit 2 ;;
+esac
+preset=${SR_BUILD_PRESET:-asan}
+sh "$experiment_dir/../scripts/build-experiment.sh" "$preset" "$target"
+cd "$experiment_dir"
+export GPP_VERSION="CMake preset: $preset"
+exec "../build/$preset/bin/$target" -i ../50k_data/ps_data_50k.f32

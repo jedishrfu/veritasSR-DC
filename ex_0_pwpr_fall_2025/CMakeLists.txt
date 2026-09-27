@@ -1,0 +1,7 @@
+add_executable(ex0_pwpr src/pwprCompDecomp.cpp)
+add_executable(ex0_cheb_pwpr src/newestChebPwprCompDecomp.cpp)
+add_executable(ex0_readfloats src/readfloats.cpp)
+add_executable(ex0_spdp src/SPDP_11.c)
+foreach(target IN ITEMS ex0_pwpr ex0_cheb_pwpr ex0_readfloats ex0_spdp)
+    target_link_libraries(${target} PRIVATE sr_build_options)
+endforeach()

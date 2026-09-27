@@ -1,0 +1,18 @@
+#!/bin/bash
+
+plot=./scripts/csvplot
+input_csv=./testrpts/$1/$1*.csv
+
+$plot -i $input_csv --xcol eps --ycols CR --single-plot &
+$plot -i $input_csv --xcol eps --ycols MaxAbsErr --single-plot &
+$plot -i $input_csv --xcol eps --ycols valid.samples --single-plot &
+$plot -i $input_csv -lx --xcol CR --ycols PSNR.dB --single-plot --scatterplot &
+exit
+
+$plot -i $input_csv --xcol 6 --ycols 7 --single-plot
+$plot -i $input_csv --xcol 6 --ycols 8 --single-plot
+$plot -i $input_csv --xcol 6 --ycols 9 --single-plot
+
+$plot -i $input_csv --xcol 6 --ycols 7 --single-plot
+$plot -i $input_csv --xcol 6 --ycols 8 --single-plot
+$plot -i $input_csv --xcol 6 --ycols 9 --single-plot

@@ -1,0 +1,33 @@
+#!/bin/zsh
+
+rm -rf /tmp/outputs
+rm -rf ./ps-data
+rm -rf ./obs-spitzer
+rm -rf ./obs-temp
+rm -rf ./logs
+rm *.csv
+
+mkdir ./ps-data
+mkdir ./obs-spitzer
+mkdir ./obs-temp
+mkdir ./logs
+
+echo "# Test script: $0"
+echo
+
+echo "\`\`\`"
+cat -n "$0"
+echo "\`\`\`"
+
+echo
+
+python3 run-all-f32-compression-tests.py -f ./datasets/ps_data.f32   -tfrom 0.01 -tto 0.03 -tstep 0.001
+mv results.csv ps_data.csv
+
+python3 run-all-f32-compression-tests.py -f ./datasets/obs_spitzer_50000.f32 -tfrom 1.0 -tto 10.0 -tstep 0.1
+
+mv results.csv obs_spitzer.csv
+
+python3 run-all-f32-compression-tests.py -f ./datasets/obs_temp_50000.f32    -tfrom 1.0 -tto 10.0 -tstep 0.1
+
+mv results.csv obs_temp.csv

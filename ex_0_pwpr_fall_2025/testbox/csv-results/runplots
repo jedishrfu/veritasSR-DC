@@ -1,0 +1,13 @@
+#!/bin/bash
+
+./csvplot -i ps_data.csv --xcol 6 --ycols 7 --single-plot
+./csvplot -i ps_data.csv --xcol 6 --ycols 8 --single-plot
+./csvplot -i ps_data.csv --xcol 6 --ycols 9 --single-plot
+
+./csvplot -i obs_spitzer.csv --xcol 6 --ycols 7 --single-plot
+./csvplot -i obs_spitzer.csv --xcol 6 --ycols 8 --single-plot
+./csvplot -i obs_spitzer.csv --xcol 6 --ycols 9 --single-plot
+
+./csvplot -i obs_temp.csv --xcol 6 --ycols 7 --single-plot
+./csvplot -i obs_temp.csv --xcol 6 --ycols 8 --single-plot
+./csvplot -i obs_temp.csv --xcol 6 --ycols 9 --single-plot

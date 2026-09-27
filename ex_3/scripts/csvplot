@@ -1,0 +1,495 @@
+#!/usr/bin/env python3
+import argparse
+import sqlite3
+import sys
+
+import pandas as pd
+import matplotlib.pyplot as plt
+
+import matplotlib
+matplotlib.use('TkAgg')
+
+# Colors for single-plot mode
+COLOR_CYCLE = ["red", "orange", "green", "blue", "violet"]
+
+
+def show_csv_columns(csv_path):
+    """Print the columns available from a CSV, including synthetic rownum."""
+    try:
+        columns = pd.read_csv(csv_path, nrows=0).columns.str.strip().tolist()
+    except Exception as e:
+        print(
+            f"\nError reading CSV '{csv_path}' to show columns: {e}",
+            file=sys.stderr
+        )
+        return False
+
+    if "rownum" not in columns:
+        columns.append("rownum")
+
+    print(f"\nAvailable columns in '{csv_path}' (index: name):")
+    for index, column in enumerate(columns):
+        print(f"  {index}: {column}")
+    return True
+
+
+def parse_args():
+    parser = argparse.ArgumentParser(
+        description="Plot selected columns from CSV grouped by 'cmd'.",
+        formatter_class=argparse.RawDescriptionHelpFormatter,
+        add_help=False,
+        epilog="""\
+Row selection with --where (or -where):
+  The expression is an SQLite WHERE expression evaluated against the CSV
+  columns. Put the whole expression in shell quotes. Text values use single
+  quotes; numeric values do not. Useful operators include =, !=, <, <=, >,
+  >=, BETWEEN, IN, LIKE, IS NULL, AND, OR, and NOT.
+
+  Examples:
+    %(prog)s -i data.csv --where "eps BETWEEN 0.01 AND 0.03"
+    %(prog)s -i data.csv --where "cmd LIKE 'exprgen.%%' AND score >= 10"
+    %(prog)s -i data.csv -where "cmd IN ('first', 'second')"
+
+Scatterplots:
+  Add --scatterplot (or --scatter) to draw unconnected points instead of
+  lines. It works in both the default one-figure-per-cmd mode and with
+  --single-plot.
+
+  Example:
+    %(prog)s -i data.csv --xcol eps --ycols score --scatterplot \\
+      --where "cmd = 'exprgen.test'"
+
+Plot-window keys:
+  q       Close all plot windows.
+  Escape  Close only the currently focused plot window.
+
+Mouse:
+  Hover over a line or scatter point to display its legend label.
+"""
+    )
+    parser.add_argument(
+        "-h", "--help",
+        nargs="?",
+        const="",
+        default=None,
+        metavar="CSV",
+        help=(
+            "Show this help and exit. If CSV is supplied, also show its "
+            "available columns; for example: %(prog)s -h data.csv"
+        )
+    )
+    parser.add_argument(
+        "-i", "--input",
+        help="Input CSV file (optional alternative to positional CSV)."
+    )
+    parser.add_argument(
+        "input_file",
+        nargs="?",
+        metavar="CSV",
+        help="Input CSV file; may be given as the first non-option argument."
+    )
+    parser.add_argument(
+        "--xcol",
+        default="eps",
+        help=(
+            "X-axis column (name or 0-based index). "
+            "Use 'rownum' for row number. Default: eps"
+        ),
+    )
+    parser.add_argument(
+        "--ycols",
+        nargs="+",
+        help="Y-axis columns (names or 0-based indices)."
+    )
+    parser.add_argument(
+        "--show-cols",
+        action="store_true",
+        help="Print available columns (with indices) and exit."
+    )
+    parser.add_argument(
+        "--single-plot",
+        action="store_true",
+        help=(
+            "Plot ALL cmd groups on a single figure using "
+            "red/orange/green/blue/violet."
+        ),
+    )
+    parser.add_argument(
+        "--scatterplot", "--scatter",
+        action="store_true",
+        help="Draw unconnected points instead of lines with point markers."
+    )
+    parser.add_argument(
+        "-lx", "--log-x",
+        action="store_true",
+        help="Use a logarithmic x-axis."
+    )
+    parser.add_argument(
+        "-ly", "--log-y",
+        action="store_true",
+        help="Use a logarithmic y-axis."
+    )
+    parser.add_argument(
+        "-lxy", "--log-xy",
+        action="store_true",
+        help="Use logarithmic x- and y-axes."
+    )
+    parser.add_argument(
+        "-where", "--where",
+        metavar="EXPR",
+        help=(
+            "Select rows using an SQLite WHERE expression. Quote the entire "
+            "expression; see the examples below."
+        ),
+    )
+
+    # Don’t crash on stray args (e.g. launching via Finder)
+    args, unknown = parser.parse_known_args()
+    if unknown:
+        print("Ignoring unknown arguments:", unknown)
+
+    if args.help is not None:
+        parser.print_help()
+        help_csv = args.help or args.input or args.input_file
+        if help_csv and not show_csv_columns(help_csv):
+            sys.exit(1)
+        sys.exit(0)
+
+    if args.input and args.input_file:
+        parser.error("specify the input CSV either positionally or with -i, not both")
+
+    args.input = args.input or args.input_file
+    if not args.input:
+        parser.error("an input CSV is required (use CSV or -i CSV)")
+
+    return args
+
+
+def resolve_column(spec: str, df: pd.DataFrame, allow_rownum: bool = False) -> str:
+    """
+    Resolve a column specifier to an actual column name in df.
+
+    - If spec == 'rownum' and allow_rownum=True, return 'rownum'.
+    - If spec matches a column name, return it.
+    - Otherwise, interpret spec as a 0-based column index.
+    """
+    spec = spec.strip()
+
+    if allow_rownum and spec == "rownum":
+        return "rownum"
+
+    # Name match
+    if spec in df.columns:
+        return spec
+
+    # Try index
+    try:
+        idx = int(spec)
+    except ValueError:
+        raise KeyError(f"Column '{spec}' not found as name or index.")
+
+    if idx < 0 or idx >= len(df.columns):
+        raise KeyError(
+            f"Column index {idx} out of range [0, {len(df.columns) - 1}]."
+        )
+
+    return df.columns[idx]
+
+
+def apply_where_filter(df: pd.DataFrame, where: str) -> pd.DataFrame:
+    """Filter rows using a SQLite WHERE expression."""
+    connection = sqlite3.connect(":memory:")
+    try:
+        df.to_sql("plot_data", connection, index=False, if_exists="replace")
+        return pd.read_sql_query(
+            f"SELECT * FROM plot_data WHERE {where}",
+            connection
+        )
+    except (sqlite3.Error, pd.errors.DatabaseError) as e:
+        raise ValueError(f"invalid --where expression: {e}") from e
+    finally:
+        connection.close()
+
+
+def configure_axes(fig, ax, args, x, y_series):
+    """Apply requested scales and place the legend below the plot."""
+    log_x = args.log_x or args.log_xy
+    log_y = args.log_y or args.log_xy
+
+    if log_x:
+        x_numeric = pd.to_numeric(x, errors="coerce")
+        if x_numeric.isna().any() or (x_numeric <= 0).any():
+            raise ValueError(
+                "logarithmic x-axis requires positive numeric x values"
+            )
+        ax.set_xscale("log")
+
+    if log_y:
+        for name, values in y_series:
+            y_numeric = pd.to_numeric(values, errors="coerce")
+            if y_numeric.isna().any() or (y_numeric <= 0).any():
+                raise ValueError(
+                    f"logarithmic y-axis requires positive numeric values; "
+                    f"column '{name}' contains zero, negative, or non-numeric "
+                    "values"
+                )
+        ax.set_yscale("log")
+
+    handles, labels = ax.get_legend_handles_labels()
+    legend_columns = min(4, max(1, len(labels)))
+    legend_rows = (len(labels) + legend_columns - 1) // legend_columns
+    fig.legend(
+        handles,
+        labels,
+        loc="lower center",
+        bbox_to_anchor=(0.5, 0.02),
+        ncol=legend_columns,
+        borderaxespad=0
+    )
+    return min(0.35, 0.07 + 0.035 * (legend_rows - 1))
+
+
+def plot_series(ax, x, y, label, args, color=None):
+    """Draw one data series in the selected line or scatter style."""
+    if args.scatterplot:
+        ax.scatter(x, y, color=color, label=label)
+    else:
+        ax.plot(x, y, marker="o", color=color, label=label)
+
+
+def handle_plot_key(event):
+    """Close all plots with q, or only the active plot with Escape."""
+    if event.key and event.key.lower() == "q":
+        plt.close("all")
+    elif event.key == "escape":
+        plt.close(event.canvas.figure)
+
+
+def enable_plot_keys(fig):
+    """Attach csvplot's keyboard controls to a figure."""
+    fig.canvas.mpl_connect("key_press_event", handle_plot_key)
+
+
+def enable_legend_hover(fig, ax):
+    """Show an artist's legend label while the pointer is over its data."""
+    annotation = ax.annotate(
+        "",
+        xy=(0, 0),
+        xytext=(10, 10),
+        textcoords="offset points",
+        bbox={"boxstyle": "round", "fc": "white", "alpha": 0.9},
+        arrowprops={"arrowstyle": "->"},
+        zorder=100
+    )
+    annotation.set_visible(False)
+    fig._csvplot_hover_annotation = annotation
+
+    def on_mouse_move(event):
+        visible = annotation.get_visible()
+
+        if event.inaxes is not ax or event.xdata is None or event.ydata is None:
+            if visible:
+                annotation.set_visible(False)
+                fig.canvas.draw_idle()
+            return
+
+        for artist in [*ax.lines, *ax.collections]:
+            label = artist.get_label()
+            if not label or label.startswith("_"):
+                continue
+
+            contains, _ = artist.contains(event)
+            if contains:
+                annotation.xy = (event.xdata, event.ydata)
+                annotation.set_text(label)
+                annotation.set_visible(True)
+                fig.canvas.draw_idle()
+                return
+
+        if visible:
+            annotation.set_visible(False)
+            fig.canvas.draw_idle()
+
+    fig.canvas.mpl_connect("motion_notify_event", on_mouse_move)
+
+
+def main():
+    args = parse_args()
+
+    # --- Read CSV ---
+    try:
+        df = pd.read_csv(args.input)
+    except Exception as e:
+        print(f"Error reading CSV '{args.input}': {e}", file=sys.stderr)
+        sys.exit(1)
+
+    # Strip whitespace from column names
+    df.columns = df.columns.str.strip()
+
+    # Strip whitespace introduced by CSV files written as ", " separated data.
+    for column in df.select_dtypes(include="object").columns:
+        df[column] = df[column].str.strip()
+
+    # Add row number column (0-based)
+    df["rownum"] = range(len(df))
+
+    if args.where:
+        original_count = len(df)
+        try:
+            df = apply_where_filter(df, args.where)
+        except ValueError as e:
+            print(f"Error: {e}", file=sys.stderr)
+            sys.exit(1)
+
+        print(
+            f"--where selected {len(df)} of {original_count} rows."
+        )
+        if df.empty:
+            print("Error: --where matched no rows.", file=sys.stderr)
+            sys.exit(1)
+
+    # --- Show columns and exit, if requested ---
+    if args.show_cols:
+        print("Available columns (index: name):")
+        for i, col in enumerate(df.columns):
+            print(f"  {i}: {col}")
+        sys.exit(0)
+
+    # --- Ensure 'cmd' exists for grouping ---
+    if "cmd" not in df.columns:
+        print("Error: required column 'cmd' not found in CSV.", file=sys.stderr)
+        print("Available columns (index: name):")
+        for i, col in enumerate(df.columns):
+            print(f"  {i}: {col}")
+        sys.exit(1)
+
+    # --- Resolve x-axis column (name/index/rownum) ---
+    try:
+        xcol = resolve_column(args.xcol, df, allow_rownum=True)
+    except KeyError as e:
+        print(f"Error: {e}", file=sys.stderr)
+        print("Available columns (index: name):")
+        for i, col in enumerate(df.columns):
+            print(f"  {i}: {col}")
+        sys.exit(1)
+
+    # --- Determine y columns ---
+    if args.ycols:
+        y_specs = args.ycols
+    else:
+        # If no ycols given, let user choose from numeric columns
+        numeric_cols = df.select_dtypes(include="number").columns.tolist()
+        if xcol in numeric_cols:
+            numeric_cols.remove(xcol)
+
+        if not numeric_cols:
+            print("Error: no numeric columns available for y-axis.", file=sys.stderr)
+            sys.exit(1)
+
+        print("\nNo --ycols specified.")
+        print("Numeric columns available for y-axis (index: name):")
+        for i, c in enumerate(numeric_cols):
+            print(f"  {i}: {c}")
+
+        choice = input("Enter indices of columns to plot (comma separated): ").strip()
+        try:
+            idxs = [int(x) for x in choice.split(",") if x.strip()]
+            # Convert numeric choices to column indices (in df.columns space)
+            y_specs = [str(df.columns.get_loc(numeric_cols[i])) for i in idxs]
+        except Exception as e:
+            print(f"Error parsing indices: {e}", file=sys.stderr)
+            sys.exit(1)
+
+    # Resolve y column specs to actual names
+    ycols = []
+    for spec in y_specs:
+        try:
+            ycols.append(resolve_column(spec, df))
+        except KeyError as e:
+            print(f"Error: {e}", file=sys.stderr)
+            print("Available columns (index: name):")
+            for i, col in enumerate(df.columns):
+                print(f"  {i}: {col}")
+            sys.exit(1)
+
+    # --- Group by cmd ---
+    groups = df.groupby("cmd", sort=False)
+
+    # === SINGLE-PLOT MODE ===
+    if args.single_plot:
+        fig, ax = plt.subplots()
+        enable_plot_keys(fig)
+        color_index = 0
+        plotted_series = []
+
+        for cmd_value, group in groups:
+            # Sort by x if not rownum
+            if xcol != "rownum":
+                try:
+                    group = group.sort_values(by=xcol)
+                except Exception:
+                    pass
+
+            x = group[xcol]
+
+            for ycol in ycols:
+                color = COLOR_CYCLE[color_index % len(COLOR_CYCLE)]
+                color_index += 1
+                label = f"{cmd_value} : {ycol}"
+                plot_series(
+                    ax, x, group[ycol], label, args, color=color
+                )
+                plotted_series.append((ycol, group[ycol]))
+
+        ax.set_title("All cmd groups (single plot)")
+        ax.set_xlabel(xcol)
+        ax.set_ylabel(" / ".join(ycols))
+        ax.grid(True)
+        enable_legend_hover(fig, ax)
+        try:
+            bottom_margin = configure_axes(
+                fig, ax, args, df[xcol], plotted_series
+            )
+        except ValueError as e:
+            print(f"Error: {e}", file=sys.stderr)
+            sys.exit(1)
+        fig.tight_layout(rect=(0, bottom_margin, 1, 1))
+        plt.show()
+        return
+
+    # === MULTI-PLOT MODE (one figure per cmd) ===
+    for cmd_value, group in groups:
+        if xcol != "rownum":
+            try:
+                group = group.sort_values(by=xcol)
+            except Exception:
+                pass
+
+        x = group[xcol]
+
+        fig, ax = plt.subplots()
+        enable_plot_keys(fig)
+        plotted_series = []
+        for ycol in ycols:
+            plot_series(ax, x, group[ycol], ycol, args)
+            plotted_series.append((ycol, group[ycol]))
+
+        enable_legend_hover(fig, ax)
+        ax.set_title(f"cmd = {cmd_value}")
+        ax.set_xlabel(xcol)
+        ax.set_ylabel(" / ".join(ycols))
+        ax.grid(True)
+        try:
+            bottom_margin = configure_axes(
+                fig, ax, args, x, plotted_series
+            )
+        except ValueError as e:
+            print(f"Error: {e}", file=sys.stderr)
+            sys.exit(1)
+        fig.tight_layout(rect=(0, bottom_margin, 1, 1))
+
+    plt.show()
+
+
+if __name__ == "__main__":
+    main()

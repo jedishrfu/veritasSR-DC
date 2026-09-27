@@ -1,0 +1,1277 @@
+#include <stdio.h>
+#include <stdlib.h>
+#include <string.h>
+#include <time.h>
+#include <unistd.h>
+
+#include <string>
+#include <vector>
+#include <set>
+#include <cctype>
+#include <cstdlib>
+#include <sstream>
+#include <iostream>
+#include <cmath>
+
+#include "ast_nodes.h"
+#include "ast_io.h"
+#include "logging_code.h"
+#include "infix_parsing_code.h"
+
+#define FILENAME_SIZE 256
+#define DEFAULT_COEFF 1
+#define MAX_LOOPS 10
+
+VarTable varTable;
+
+inline double randomDouble(double minVal, double maxVal)
+{
+  static std::random_device rd;
+  static std::mt19937 gen(rd());
+
+  std::uniform_real_distribution<double> dist(minVal, maxVal);
+
+  return dist(gen);
+};
+struct Options
+{
+  std::string input_file;
+  std::string segments_file;
+  std::string decom_file;
+
+  double tol;
+  int maxFloats;
+  int maxGenerations;
+};
+
+static void ensureDefaultVariables()
+{
+  if (varTable.getCount() == 0)
+  {
+    varTable.addVar("x", 0.0);
+  }
+}
+
+static std::vector<std::string> makeParserVariableNames()
+{
+  std::vector<std::string> vars;
+
+  static const char* defaultNames[] =
+  {
+    "x", "y", "z", "t", "u", "v", "w"
+  };
+
+  int count = varTable.getCount();
+
+  for (int i = 0; i < count; i++)
+  {
+    if (i < 7)
+      vars.push_back(defaultNames[i]);
+    else
+    {
+      char buf[32];
+      snprintf(buf, sizeof(buf), "x%d", i);
+      vars.push_back(buf);
+    }
+  }
+
+  return vars;
+}
+
+static bool addUniqueTree(
+  ExprArray* result,
+  Node* tree,
+  std::set<std::string>& seen)
+{
+  if (!result || !tree)
+    return false;
+
+  std::string key = tree->toString();
+
+  if (seen.find(key) != seen.end())
+  {
+    delete tree;
+    return false;
+  }
+
+  seen.insert(key);
+
+  NodeStats* ns = new NodeStats();
+  ExprStats* es = new ExprStats(tree, ns);
+  result->add(es);
+
+  return true;
+}
+
+static bool addUniqueExprStats(
+  ExprArray* result,
+  ExprStats* src,
+  std::set<std::string>& seen)
+{
+  if (!src || !src->n)
+    return false;
+
+  return addUniqueTree(result, src->n->clone(), seen);
+}
+
+ExprArray* generateBasicExpressions()
+{
+  ensureDefaultVariables();
+
+  ExprArray* result = new ExprArray();
+  std::set<std::string> seen;
+
+  std::vector<std::string> vars = makeParserVariableNames();
+
+  logPrint("VarCount = %d", varTable.getCount());
+
+  std::vector<std::string> templates;
+
+  for (size_t i = 0; i < vars.size(); i++)
+  {
+    const std::string& x = vars[i];
+
+    templates.push_back(x);
+    templates.push_back("sin(" + x + ")");
+    templates.push_back("cos(" + x + ")");
+    templates.push_back("exp(" + x + ")");
+    templates.push_back("log(" + x + ")");
+
+    templates.push_back(x + " + 1");
+    templates.push_back(x + " - 1");
+    templates.push_back("1 - " + x);
+    templates.push_back(x + " * 2");
+    templates.push_back(x + " / 2");
+
+    templates.push_back("2 * " + x);
+    templates.push_back("0.5 * " + x);
+    templates.push_back("2 * " + x + " + 1");
+    templates.push_back("0.5 * " + x + " + 1");
+
+    templates.push_back(x + " * " + x);
+    templates.push_back(x + " * " + x + " + " + x);
+    templates.push_back("sin(" + x + ") + " + x);
+    templates.push_back("cos(" + x + ") + " + x);
+    templates.push_back("sin(" + x + ") * " + x);
+    templates.push_back("cos(" + x + ") * " + x);
+    templates.push_back("exp(" + x + ") + " + x);
+    templates.push_back("log(" + x + ") + " + x);
+
+    templates.push_back("sin(" + x + ") + cos(" + x + ")");
+    templates.push_back("sin(" + x + ") * cos(" + x + ")");
+  }
+
+  if (vars.size() >= 2)
+  {
+    for (size_t i = 0; i + 1 < vars.size(); i++)
+    {
+      const std::string& x = vars[i];
+      const std::string& y = vars[i + 1];
+
+      templates.push_back(x + " + " + y);
+      templates.push_back(x + " - " + y);
+      templates.push_back(x + " * " + y);
+      templates.push_back(x + " / " + y);
+
+      templates.push_back("sin(" + x + ") + cos(" + y + ")");
+      templates.push_back("sin(" + x + ") * exp(" + y + ")");
+      templates.push_back("(" + x + " + " + y + ") * (" + x + " - " + y + ")");
+      templates.push_back("2 * " + x + " + 3 * " + y);
+    }
+  }
+
+  for (size_t i = 0; i < templates.size(); i++)
+  {
+    Node* root = parseExpression(templates[i], vars);
+
+    if (!root)
+    {
+      logWarning(
+        "Parser rejected expression '%s': %s",
+        templates[i].c_str(),
+        getLastParseError().c_str());
+      continue;
+    }
+
+    addUniqueTree(result, root, seen);
+  }
+
+  logPrint("\nInitial pool generated from infix templates: %d expressions", result->size());
+
+  return result;
+}
+
+static OpKind randomUnaryOp()
+{
+  switch (rand() % 4)
+  {
+  case 0: return OP_SIN;
+  case 1: return OP_COS;
+  case 2: return OP_EXP;
+  case 3: return OP_LOG;
+  }
+
+  return OP_SIN;
+}
+
+static OpKind randomBinaryOp()
+{
+  switch (rand() % 4)
+  {
+  case 0: return OP_ADD;
+  case 1: return OP_SUB;
+  case 2: return OP_MUL;
+  case 3: return OP_DIV;
+  }
+
+  return OP_ADD;
+}
+
+static int countOpNodes(const Node* n)
+{
+  if (!n) return 0;
+
+  if (n->getKind() == NODE_UNARY)
+    return 1 + countOpNodes(n->getLeftChild());
+
+  if (n->getKind() == NODE_BINARY)
+    return 1 + countOpNodes(n->getLeftChild()) + countOpNodes(n->getRightChild());
+
+  return 0;
+}
+
+static Node* mutateRandomOperatorRec(const Node* src, int target, int& seen)
+{
+  if (!src) return NULL;
+
+  NodeKind kind = src->getKind();
+
+  if (kind == NODE_VALUE)
+    return Node::makeCoeffValue(src->getNodeCoeff());
+
+  if (kind == NODE_VARIABLE)
+    return src->clone();
+
+  if (kind == NODE_UNARY)
+  {
+    OpKind op = src->getOp();
+
+    if (seen == target)
+    {
+      OpKind newOp = op;
+
+      while (newOp == op)
+        newOp = randomUnaryOp();
+
+      op = newOp;
+    }
+
+    seen++;
+
+    return Node::makeUnary(
+      op,
+      mutateRandomOperatorRec(src->getLeftChild(), target, seen)
+    );
+  }
+
+  if (kind == NODE_BINARY)
+  {
+    OpKind op = src->getOp();
+
+    if (seen == target)
+    {
+      OpKind newOp = op;
+
+      while (newOp == op)
+        newOp = randomBinaryOp();
+
+      op = newOp;
+    }
+
+    seen++;
+
+    return Node::makeBinary(
+      op,
+      mutateRandomOperatorRec(src->getLeftChild(), target, seen),
+      mutateRandomOperatorRec(src->getRightChild(), target, seen)
+    );
+  }
+
+  return src->clone();
+}
+
+static Node* mutateRandomOperator(const Node* src)
+{
+  int opCount = countOpNodes(src);
+
+  if (opCount == 0)
+    return src->clone();
+
+  int target = rand() % opCount;
+  int seen = 0;
+
+  return mutateRandomOperatorRec(src, target, seen);
+}
+
+static Node* deleteRandomNodeRec(const Node* src, int target, int& seen)
+{
+  if (!src) return NULL;
+
+  NodeKind kind = src->getKind();
+
+  if (kind == NODE_VALUE)
+    return Node::makeCoeffValue(src->getNodeCoeff());
+
+  if (kind == NODE_VARIABLE)
+    return src->clone();
+
+  if (kind == NODE_UNARY)
+  {
+    if (seen == target)
+      return src->getLeftChild() ? src->getLeftChild()->clone() : src->clone();
+
+    seen++;
+
+    return Node::makeUnary(
+      src->getOp(),
+      deleteRandomNodeRec(src->getLeftChild(), target, seen)
+    );
+  }
+
+  if (kind == NODE_BINARY)
+  {
+    if (seen == target)
+    {
+      if (rand() % 2 == 0 && src->getLeftChild())
+        return src->getLeftChild()->clone();
+
+      if (src->getRightChild())
+        return src->getRightChild()->clone();
+
+      return src->clone();
+    }
+
+    seen++;
+
+    return Node::makeBinary(
+      src->getOp(),
+      deleteRandomNodeRec(src->getLeftChild(), target, seen),
+      deleteRandomNodeRec(src->getRightChild(), target, seen)
+    );
+  }
+
+  return src->clone();
+}
+
+static Node* deleteRandomNode(const Node* src)
+{
+  int opCount = countOpNodes(src);
+
+  if (opCount == 0)
+    return src->clone();
+
+  int target = rand() % opCount;
+  int seen = 0;
+
+  return deleteRandomNodeRec(src, target, seen);
+}
+
+static int countAllNodes(const Node* n)
+{
+  if (!n) return 0;
+
+  return 1
+    + countAllNodes(n->getLeftChild())
+    + countAllNodes(n->getRightChild());
+}
+
+static int countVariableNodes(const Node* n)
+{
+  if (!n) return 0;
+
+  int count = 0;
+
+  if (n->getKind() == NODE_VARIABLE)
+    count++;
+
+  count += countVariableNodes(n->getLeftChild());
+  count += countVariableNodes(n->getRightChild());
+
+  return count;
+}
+
+static Node* cloneSubtreeAt(const Node* src, int target, int& seen)
+{
+  if (!src) return NULL;
+
+  if (seen == target)
+    return src->clone();
+
+  seen++;
+
+  Node* leftResult = cloneSubtreeAt(src->getLeftChild(), target, seen);
+  if (leftResult) return leftResult;
+
+  Node* rightResult = cloneSubtreeAt(src->getRightChild(), target, seen);
+  if (rightResult) return rightResult;
+
+  return NULL;
+}
+
+static Node* cloneReplacingSubtreeAt(
+  const Node* src,
+  int target,
+  int& seen,
+  const Node* replacement)
+{
+  if (!src) return NULL;
+
+  if (seen == target)
+  {
+    seen++;
+    return replacement ? replacement->clone() : NULL;
+  }
+
+  seen++;
+
+  NodeKind kind = src->getKind();
+
+  if (kind == NODE_VALUE)
+    return Node::makeCoeffValue(src->getNodeCoeff());
+
+  if (kind == NODE_VARIABLE)
+    return src->clone();
+
+  if (kind == NODE_UNARY)
+  {
+    return Node::makeUnary(
+      src->getOp(),
+      cloneReplacingSubtreeAt(src->getLeftChild(), target, seen, replacement)
+    );
+  }
+
+  if (kind == NODE_BINARY)
+  {
+    return Node::makeBinary(
+      src->getOp(),
+      cloneReplacingSubtreeAt(src->getLeftChild(), target, seen, replacement),
+      cloneReplacingSubtreeAt(src->getRightChild(), target, seen, replacement)
+    );
+  }
+
+  return src->clone();
+}
+
+static Node* crossoverSubtrees(const Node* a, const Node* b)
+{
+  if (!a || !b) return NULL;
+
+  int countA = countAllNodes(a);
+  int countB = countAllNodes(b);
+
+  if (countA == 0 || countB == 0)
+    return a->clone();
+
+  int cutA = rand() % countA;
+  int cutB = rand() % countB;
+
+  int seenB = 0;
+  Node* donor = cloneSubtreeAt(b, cutB, seenB);
+
+  if (!donor)
+    return a->clone();
+
+  int seenA = 0;
+  Node* child = cloneReplacingSubtreeAt(a, cutA, seenA, donor);
+
+  delete donor;
+
+  return child;
+}
+
+static Node* makeAffineVariable(int varIndex)
+{
+  double a = randomDouble(-10.0, 10.0);
+  double b = randomDouble(-10.0, 10.0);
+
+  return Node::makeBinary(
+    OP_ADD,
+    Node::makeBinary(
+      OP_MUL,
+      Node::makeCoeffValue(a),
+      Node::makeVariable(varIndex)
+    ),
+    Node::makeCoeffValue(b)
+  );
+}
+
+static Node* mutateRandomVariableToAffineRec(
+  const Node* src,
+  int target,
+  int& seen)
+{
+  if (!src) return NULL;
+
+  NodeKind kind = src->getKind();
+
+  if (kind == NODE_VALUE)
+    return Node::makeCoeffValue(src->getNodeCoeff());
+
+  if (kind == NODE_VARIABLE)
+  {
+    if (seen == target)
+    {
+      seen++;
+      return makeAffineVariable(src->getVarIndex());
+    }
+
+    seen++;
+    return src->clone();
+  }
+
+  if (kind == NODE_UNARY)
+  {
+    return Node::makeUnary(
+      src->getOp(),
+      mutateRandomVariableToAffineRec(src->getLeftChild(), target, seen)
+    );
+  }
+
+  if (kind == NODE_BINARY)
+  {
+    return Node::makeBinary(
+      src->getOp(),
+      mutateRandomVariableToAffineRec(src->getLeftChild(), target, seen),
+      mutateRandomVariableToAffineRec(src->getRightChild(), target, seen)
+    );
+  }
+
+  return src->clone();
+}
+
+static Node* mutateRandomVariableToAffine(const Node* src)
+{
+  int varCount = countVariableNodes(src);
+
+  if (varCount == 0)
+    return src ? src->clone() : NULL;
+
+  int target = rand() % varCount;
+  int seen = 0;
+
+  return mutateRandomVariableToAffineRec(src, target, seen);
+}
+Node* mutateRandomCoeff(Node* parent)
+{
+  if (parent == nullptr)
+    return nullptr;
+
+  Node* root = parent->clone();
+
+  std::vector<Node*> coeffNodes;
+
+  std::function<void(Node*)> collectCoeffs =
+    [&](Node* node)
+    {
+      if (node == nullptr)
+        return;
+
+      if (node->getKind() == NODE_VALUE)
+        coeffNodes.push_back(node);
+
+      collectCoeffs(node->getLeftChild());
+      collectCoeffs(node->getRightChild());
+    };
+
+  collectCoeffs(root);
+
+  if (coeffNodes.empty())
+    return root;
+
+  int idx = std::rand() % coeffNodes.size();
+
+  Node* coeff = coeffNodes[idx];
+
+  double oldValue = coeff->getNodeCoeff();
+
+  if (std::fabs(oldValue) < 1.0e-12)
+  {
+    coeff->setNodeCoeff(randomDouble(-10.0, 10.0));
+  }
+  else
+  {
+    coeff->setNodeCoeff(
+      oldValue * randomDouble(0.8, 1.2));
+  }
+
+  return root;
+}
+
+int bucket(int n)
+{
+  if (n <= 150)
+    return 1;
+
+  return ((n - 151) / 100) + 2;
+}
+
+ExprArray* evolveExpressions(ExprArray* input)
+{
+  ExprArray* result = new ExprArray();
+  std::set<std::string> seen;
+
+  if (!input || input->size() == 0)
+    return result;
+
+  enum MutationType
+  {
+    MUT_CONST = 0,
+    MUT_UNARY,
+    MUT_BINARY,
+    MUT_CHANGE_OP,
+    MUT_DELETE_NODE,
+    MUT_VARIABLE_AFFINE,
+    MUT_CROSSOVER
+  };
+
+  const int NUM_CASES = 7;
+
+  int step = bucket(input->size() / 100);
+
+  for (int i = 0; i < input->size(); i += step)
+  {
+    if (!input->items[i] || !input->items[i]->n)
+      continue;
+
+    Node* parent = input->items[i]->n;
+
+    addUniqueExprStats(result, input->items[i], seen);
+
+    Node* newTree = NULL;
+
+    int choice = rand() % NUM_CASES;
+
+    switch (choice)
+    {
+    case MUT_CONST:
+    {
+      if (countNodeCoeffs(parent) > 0)
+        newTree = mutateRandomCoeff(parent);
+      else
+        newTree = mutateRandomVariableToAffine(parent);
+
+      break;
+    }
+
+    case MUT_UNARY:
+    {
+      newTree = Node::makeUnary(
+        randomUnaryOp(),
+        parent->clone()
+      );
+
+      break;
+    }
+
+    case MUT_BINARY:
+    {
+      int j = rand() % input->size();
+
+      if (j == i && input->size() > 1)
+        j = (j + 1) % input->size();
+
+      if (!input->items[j] || !input->items[j]->n)
+        break;
+
+      Node* other = input->items[j]->n;
+      OpKind op = randomBinaryOp();
+
+      if (rand() % 2 == 0)
+      {
+        newTree = Node::makeBinary(
+          op,
+          parent->clone(),
+          other->clone()
+        );
+      }
+      else
+      {
+        newTree = Node::makeBinary(
+          op,
+          other->clone(),
+          parent->clone()
+        );
+      }
+
+      break;
+    }
+
+    case MUT_CHANGE_OP:
+    {
+      newTree = mutateRandomOperator(parent);
+      break;
+    }
+
+    case MUT_DELETE_NODE:
+    {
+      newTree = deleteRandomNode(parent);
+      break;
+    }
+
+    case MUT_VARIABLE_AFFINE:
+    {
+      newTree = mutateRandomVariableToAffine(parent);
+      break;
+    }
+
+    case MUT_CROSSOVER:
+    {
+      int j = rand() % input->size();
+
+      if (j == i && input->size() > 1)
+        j = (j + 1) % input->size();
+
+      if (!input->items[j] || !input->items[j]->n)
+        break;
+
+      newTree = crossoverSubtrees(parent, input->items[j]->n);
+      break;
+    }
+
+    default:
+      break;
+    }
+
+    if (newTree)
+      addUniqueTree(result, newTree, seen);
+  }
+
+  return result;
+}
+
+void resetNodeCoeffs(Node* node)
+{
+  if (!node) return;
+
+  if (node->getKind() == NODE_VALUE)
+    node->setNodeCoeff(NAN);
+
+  resetNodeCoeffs(node->getLeftChild());
+  resetNodeCoeffs(node->getRightChild());
+}
+
+ExprArray* filterPool(
+  ExprArray* input,
+  double cutoffScore)
+{
+  ExprArray* result = new ExprArray();
+
+  for (int i = 0; i < input->size(); i++)
+  {
+    ExprStats* es = input->items[i];
+
+    if (!es || !es->ns)
+      continue;
+
+    double mse = es->ns->mse;
+
+    if (std::isfinite(mse) && mse < cutoffScore)
+    {
+      result->add(es->clone());
+    }
+  }
+
+  return result;
+}
+
+void printHeader()
+{
+  logPrint("# Symbolic Regression with Genetic Programming\n\n");
+  logPrint("Date: %s // %s\n\n", __DATE__, __TIME__);
+  logPrint("C++ Version: %s\n\n", getenv("GPP_VERSION") ? getenv("GPP_VERSION") : "unknown");
+
+  char cwd[256];
+
+  if (getcwd(cwd, sizeof(cwd)) != NULL)
+  {
+    char* last = strrchr(cwd, '/');
+    logNote("Experiment: %s\n\n", last ? last + 1 : cwd);
+  }
+
+  logPrint("Author: James McArdle\n\n");
+
+  logPrint("This program performs symbolic regression using a simple genetic programming approach.\n\n");
+  logPrint("It reads input data from a binary file, generates mathematical expressions, evaluates them against the data, and evolves the expressions over multiple generations to find better fits.\n\n");
+}
+
+int processArgs(
+  int argc,
+  char* argv[],
+  Options& opts)
+{
+  int opt;
+
+  while ((opt = getopt(argc, argv, "i:z:o:e:n:g:")) != -1)
+  {
+    switch (opt)
+    {
+    case 'i':
+      opts.input_file = optarg;
+      break;
+
+    case 'z':
+      opts.segments_file = optarg;
+      break;
+
+    case 'o':
+      opts.decom_file = optarg;
+      break;
+
+    case 'e':
+      opts.tol = atof(optarg);
+      break;
+
+    case 'n':
+      opts.maxFloats = atoi(optarg);
+      break;
+
+    case 'g':
+      opts.maxGenerations = atoi(optarg);
+      break;
+
+    default:
+      logError("Invalid option: -%c", opt);
+      return 1;
+    }
+  }
+
+  return 0;
+}
+
+
+inline void collectCoeffNodes(Node* node, std::vector<Node*>& coeffs)
+{
+  if (node == nullptr)
+    return;
+
+  if (node->isCoeffNode())
+  {
+    coeffs.push_back(node);
+    return;
+  }
+
+  collectCoeffNodes(node->getLeftChild(), coeffs);
+  collectCoeffNodes(node->getRightChild(), coeffs);
+}
+
+inline std::vector<Node*> extractCoeffNodes(Node* root)
+{
+  std::vector<Node*> coeffs;
+  collectCoeffNodes(root, coeffs);
+  return coeffs;
+}
+
+inline double scoreMSE(
+  Node* n,
+  int vi,
+  float* data,
+  int numFloats)
+{
+  NodeStats ns;
+  computeScore(vi, 0.0, data, numFloats, n, &ns);
+  return ns.mse;
+}
+
+inline double optimizeCoeffSubset_HillClimbing_Search(
+  Node* n,
+  const std::vector<Node*>& coeffs,
+  int lo,
+  int hi,
+  int vi,
+  float* data,
+  int numFloats,
+  double initialStep,
+  double tolerance,
+  int maxIterations)
+{
+  int count = hi - lo;
+
+  if (count <= 0)
+    return scoreMSE(n, vi, data, numFloats);
+
+  double bestMSE = scoreMSE(n, vi, data, numFloats);
+
+  std::vector<double> step(count, initialStep);
+
+  // Determine initial sign for this subset
+  for (int i = 0; i < count; i++)
+  {
+    Node* c = coeffs[lo + i];
+
+    double original = c->getNodeCoeff();
+
+    c->setNodeCoeff(original + initialStep);
+    double plusMSE = scoreMSE(n, vi, data, numFloats);
+
+    c->setNodeCoeff(original - initialStep);
+    double minusMSE = scoreMSE(n, vi, data, numFloats);
+
+    c->setNodeCoeff(original);
+
+    if (plusMSE < bestMSE && plusMSE <= minusMSE)
+      step[i] = fabs(initialStep);
+    else if (minusMSE < bestMSE)
+      step[i] = -fabs(initialStep);
+    else
+      step[i] = 0.0;
+  }
+
+  // Hill-climb this subset
+  for (int iter = 0; iter < maxIterations; iter++)
+  {
+    double maxStep = 0.0;
+
+    for (int i = 0; i < count; i++)
+      maxStep = std::max(maxStep, fabs(step[i]));
+
+    if (maxStep < tolerance)
+      break;
+
+    std::vector<double> oldValues(count);
+
+    for (int i = 0; i < count; i++)
+    {
+      Node* c = coeffs[lo + i];
+
+      oldValues[i] = c->getNodeCoeff();
+      c->setNodeCoeff(oldValues[i] + step[i]);
+    }
+
+    double candidateMSE = scoreMSE(n, vi, data, numFloats);
+
+    if (candidateMSE < bestMSE)
+    {
+      bestMSE = candidateMSE;
+
+      for (int i = 0; i < count; i++)
+        step[i] *= 2.0;
+    }
+    else
+    {
+      for (int i = 0; i < count; i++)
+        coeffs[lo + i]->setNodeCoeff(oldValues[i]);
+
+      for (int i = 0; i < count; i++)
+        step[i] *= 0.5;
+    }
+  }
+
+  // Recursive half search
+  if (count > 1)
+  {
+    int mid = lo + count / 2;
+
+    double beforeLeft = scoreMSE(n, vi, data, numFloats);
+    double leftMSE = optimizeCoeffSubset_HillClimbing_Search(
+      n, coeffs, lo, mid,
+      vi, data, numFloats,
+      initialStep, tolerance, maxIterations);
+
+    double beforeRight = scoreMSE(n, vi, data, numFloats);
+    double rightMSE = optimizeCoeffSubset_HillClimbing_Search(
+      n, coeffs, mid, hi,
+      vi, data, numFloats,
+      initialStep, tolerance, maxIterations);
+
+    bestMSE = std::min(bestMSE, leftMSE);
+    bestMSE = std::min(bestMSE, rightMSE);
+    bestMSE = std::min(bestMSE, beforeLeft);
+    bestMSE = std::min(bestMSE, beforeRight);
+  }
+
+  return bestMSE;
+}
+
+inline double optimize_NodeCoeffs_HillClimbing_Search(
+  Node* n,
+  int vi,
+  float* data,
+  int numFloats,
+  double initialStep = 1.0,
+  double tolerance = 1.0e-6,
+  int maxIterations = 1000)
+{
+  if (n == nullptr || data == nullptr || numFloats <= 0)
+    return 1.0e99;
+
+  std::vector<Node*> coeffs = extractCoeffNodes(n);
+
+  if (coeffs.empty())
+    return scoreMSE(n, vi, data, numFloats);
+
+  return optimizeCoeffSubset_HillClimbing_Search(
+    n,
+    coeffs,
+    0,
+    static_cast<int>(coeffs.size()),
+    vi,
+    data,
+    numFloats,
+    initialStep,
+    tolerance,
+    maxIterations);
+}
+
+inline NodeStats averageNodeStats(const ExprArray& pool)
+{
+  NodeStats avg;
+
+  if (pool.items.empty())
+    return avg;
+
+  int validCount = 0;
+
+  for (size_t i = 0; i < pool.items.size(); i++)
+  {
+    ExprStats* es = pool.items[i];
+
+    if (es == nullptr || es->ns == nullptr)
+      continue;
+
+    const NodeStats& s = *es->ns;
+
+    avg.count += s.count;
+    avg.numWithinTol += s.numWithinTol;
+    avg.numOutsideTol += s.numOutsideTol;
+
+    avg.sumError += s.sumError;
+    avg.sumSquaredError += s.sumSquaredError;
+    avg.maxAbsError += s.maxAbsError;
+    avg.meanOriginal += s.meanOriginal;
+
+    if (!std::isfinite(s.mae) || !std::isfinite(s.mse) || !std::isfinite(s.rmse))
+      continue;
+
+    avg.mae += s.mae;
+    avg.mse += s.mse;
+    avg.rmse += s.rmse;
+    avg.psnr += s.psnr;
+
+    avg.nodeCount += s.nodeCount;
+    avg.depth += s.depth;
+
+    validCount++;
+  }
+
+  if (validCount == 0)
+    return avg;
+
+  avg.count /= validCount;
+  avg.numWithinTol /= validCount;
+  avg.numOutsideTol /= validCount;
+
+  avg.sumError /= validCount;
+  avg.sumSquaredError /= validCount;
+  avg.maxAbsError /= validCount;
+  avg.meanOriginal /= validCount;
+
+  avg.mae /= validCount;
+  avg.mse /= validCount;
+  avg.rmse /= validCount;
+  avg.psnr /= validCount;
+
+  avg.nodeCount /= validCount;
+  avg.depth /= validCount;
+
+  return avg;
+}
+
+int main(int argc, char* argv[])
+{
+  srand((unsigned int)time(NULL));
+
+  printHeader();
+
+  Options opts;
+
+  opts.tol = 0.025;
+  opts.maxFloats = 1000;
+  opts.maxGenerations = 10;
+
+  double cutoffScore = 100;
+
+  if (processArgs(argc, argv, opts))
+    return 1;
+
+  ensureDefaultVariables();
+
+  logNote("- Input file:        %s", opts.input_file.c_str());
+  logNote("- Segment file:      %s", opts.segments_file.c_str());
+  logNote("- Output file:       %s", opts.decom_file.c_str());
+  logNote("- Tolerance:         %g", opts.tol);
+
+  logNote("- Cutoff Score:      %g", cutoffScore);
+  logNote("- Max Floats:        %d", opts.maxFloats);
+  logNote("- Max Generations:   %d", opts.maxGenerations);
+
+  FILE* fp = fopen(opts.input_file.c_str(), "rb");
+
+  if (fp == 0)
+  {
+    logError("Unable to open input file: %s", opts.input_file.c_str());
+    return 1;
+  }
+
+  fseek(fp, 0, SEEK_END);
+  long fileSize = ftell(fp);
+  fseek(fp, 0, SEEK_SET);
+
+  long numFloats = fileSize / sizeof(float);
+
+  if (numFloats > opts.maxFloats)
+    numFloats = opts.maxFloats;
+
+  float* dataIn = new float[numFloats];
+
+  size_t count = fread(dataIn, sizeof(float), numFloats, fp);
+  fclose(fp);
+
+  logNote("\n\nRead in %zu floats\n\n", count);
+
+  ExprArray* exprPool = NULL;
+
+  CPUTimer all_timer;
+  all_timer.start();
+
+  for (int generation = 0; generation < opts.maxGenerations; generation++)
+  {
+    printf("### Generation %d of %d (cutoff=%g)\n",
+      generation,
+      opts.maxGenerations,
+      cutoffScore);
+
+    ExprArray* newPool = NULL;
+
+    CPUTimer ga_loop_timer;
+    ga_loop_timer.start();
+
+    if (generation == 0)
+    {
+      exprPool = generateBasicExpressions();
+    }
+    else
+    {
+      int guard = 0;
+
+      while (exprPool->size() < 100 && guard < 20)
+      {
+        newPool = evolveExpressions(exprPool);
+
+        delete exprPool;
+        exprPool = newPool;
+
+        guard++;
+      }
+    }
+
+    saveExpressions("gen_x.ast", *exprPool);
+    ExprArray testReload = loadExpressions("gen_x.ast", true);
+
+    logPrint("#### Generated %d expressions", exprPool->items.size());
+    logPrint("| Expr # | MSE | Nodes | Depth | Expression |");
+    logPrint("|--------|-----|-------|-------|------------|");
+
+    for (int i = 0; i < exprPool->size(); i++)
+    {
+      ExprStats* es = exprPool->items[i];
+      Node* n = es->n;
+
+      double vi = varTable.getValue(0);
+
+      int numCoeffs = countNodeCoeffs(exprPool->items[i]->n);
+
+      optimize_NodeCoeffs_HillClimbing_Search(
+        n,
+        vi,
+        dataIn,
+        numCoeffs,
+        1.0,
+        opts.tol,
+        1000
+      );
+
+      computeScore(
+        0,
+        opts.tol,
+        dataIn,
+        (int)numFloats,
+        es->n,
+        es->ns);
+
+      NodeStats* score = es->ns;
+
+      logPrint(
+        "| %d | %g | %d | %d | %s |",
+        i,
+        score->mse,
+        score->nodeCount,
+        score->depth,
+        es->n->toString().c_str());
+    }
+
+    NodeStats avg = averageNodeStats(*exprPool);
+
+    logPrint("\naverage MSE: %f", avg.mse);
+
+    ExprArray* filtered = filterPool(exprPool, cutoffScore);
+
+    delete exprPool;
+    exprPool = filtered;
+
+    cutoffScore *= 0.5;
+
+    logPrint("#### Kept %d expressions", exprPool->size());
+    logPrint("| Expr # | MSE | Nodes | Depth | Expression |");
+    logPrint("|--------|-----|-------|-------|------------|");
+
+    if (exprPool->size() == 0)
+    {
+      logError("\n\nNo expressions survived cutoff.");
+      break;
+    }
+
+    for (int i = 0; i < exprPool->size(); i++)
+    {
+      NodeStats* score = exprPool->items[i]->ns;
+
+      computeScore(
+        0,
+        opts.tol,
+        dataIn,
+        (int)numFloats,
+        exprPool->items[i]->n,
+        score);
+
+      logPrint(
+        "| %d | %g | %d | %d | %s |",
+        i,
+        score->mse,
+        score->nodeCount,
+        score->depth,
+        exprPool->items[i]->n->toString().c_str());
+    }
+
+    logPrint("\n\nGeneration %d: %.6f s\n",
+      generation,
+      ga_loop_timer.elapsed());
+  }
+
+  logPrint("All %d generations: %.6f s\n",
+    opts.maxGenerations,
+    all_timer.elapsed());
+
+  delete exprPool;
+  delete[] dataIn;
+
+  return 0;
+}

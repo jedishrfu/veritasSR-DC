@@ -1,0 +1,48 @@
+#!/bin/zsh
+set -e
+
+script_dir="${0:A:h}"
+
+if (( $# < 2 )); then
+    print -u2 "Usage: $0 <output-file.zsr> <input-file.f32> [pysr-to-zsr options]"
+    exit 2
+fi
+
+output_file="$1"
+input_file="$2"
+shift 2
+
+if [[ "$input_file" != */* ]]; then
+    input_file="$script_dir/../50k_data/$input_file"
+fi
+if [[ ! -f "$input_file" ]]; then
+    print -u2 "Input file not found: $input_file"
+    exit 2
+fi
+
+input_stem="${${input_file:t}:r}"
+report_dir="$script_dir/testrpts/$input_stem"
+mkdir -p -- "$report_dir"
+output_file="$report_dir/${output_file:t}"
+
+if [[ "${output_file:e:l}" != "zsr" ]]; then
+    print -u2 "Output file must have a .zsr extension: $output_file"
+    exit 2
+fi
+
+output_path="${output_file:A}"
+input_path="${input_file:A}"
+if [[ "$output_path" == "$input_path" ]]; then
+    print -u2 "Refusing to overwrite input file: $input_file"
+    exit 2
+fi
+
+reconstructed_file="${output_path:r}.f32"
+python_bin="$script_dir/.venv/bin/python"
+[[ -x "$python_bin" ]] || python_bin="${commands[python3]:-python3}"
+
+exec "$python_bin" "$script_dir/pysr_to_zsr.py" \
+    "$input_path" \
+    "$@" \
+    --output "$output_path" \
+    --reconstructed-output "$reconstructed_file"
