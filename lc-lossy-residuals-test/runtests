@@ -1,0 +1,81 @@
+#!/usr/bin/env python3
+"""Run lossless benchmarks and LC lossy/lossless-residual sweeps for 18 f32 files."""
+import argparse
+from pathlib import Path
+import shlex
+import subprocess
+import sys
+
+PROJECT = Path(__file__).resolve().parent
+BENCHMARK_ROOT = Path("/Users/jamesmcardle/Desktop/ECL-Projects/benchmark-files")
+INPUTS = [
+    "FPDouble_Datasets/obs_error.raw.f32",
+    "FPDouble_Datasets/obs_spitzer.raw.f32",
+    "FPDouble_Datasets/obs_temp.raw.f32",
+    'SDR_Benchmark_Suite/EXASKY-HACC-data-medium-size/vx.f32',
+    'SDR_Benchmark_Suite/EXASKY-HACC-data-medium-size/vy.f32',
+    'SDR_Benchmark_Suite/EXASKY-HACC-data-medium-size/vz.f32',
+    'SDR_Benchmark_Suite/EXASKY-HACC-data-medium-size/xx.f32',
+    'SDR_Benchmark_Suite/EXASKY-HACC-data-medium-size/yy.f32',
+    'SDR_Benchmark_Suite/EXASKY-HACC-data-medium-size/zz.f32',
+    'SDR_Benchmark_Suite/SDRBENCH-EXASKY-NYX-512x512x512/baryon_density.f32',
+    'SDR_Benchmark_Suite/SDRBENCH-EXASKY-NYX-512x512x512/dark_matter_density.f32',
+    'SDR_Benchmark_Suite/SDRBENCH-EXASKY-NYX-512x512x512/temperature.f32',
+    'SDR_Benchmark_Suite/SDRBENCH-EXASKY-NYX-512x512x512/velocity_x.f32',
+    'SDR_Benchmark_Suite/SDRBENCH-EXASKY-NYX-512x512x512/velocity_y.f32',
+    'SDR_Benchmark_Suite/SDRBENCH-EXASKY-NYX-512x512x512/velocity_z.f32',
+    'pwpr-50k-datasets/obs_spitzer_50k.f32',
+    'pwpr-50k-datasets/obs_temp_50k.f32',
+    'pwpr-50k-datasets/ps_data_50k.f32',
+]
+
+
+def main():
+    parser = argparse.ArgumentParser(description=__doc__)
+    parser.add_argument("inputs", nargs="*", help="Optional input files instead of the default 18")
+    parser.add_argument("--dry-run", action="store_true", help="Print commands without running benchmarks")
+    parser.add_argument("--lc-dir", default=str(PROJECT.parent / "LC-framework"))
+    parser.add_argument("--csv", default=str(PROJECT / "testrpts/lossless_results.csv"))
+    args = parser.parse_args()
+    inputs = ([Path(p).expanduser().resolve() for p in args.inputs] if args.inputs
+              else [BENCHMARK_ROOT / p for p in INPUTS])
+    missing = [str(p) for p in inputs if not p.is_file()]
+    if missing:
+        parser.error("Missing inputs: " + ", ".join(missing))
+    invalid = [f"{p} ({p.stat().st_size} bytes)" for p in inputs
+               if p.stat().st_size == 0 or p.stat().st_size % 4]
+    if invalid:
+        parser.error("Inputs must be nonempty raw f32 data with sizes divisible by 4: "
+                     + ", ".join(invalid))
+    common_csv = str(Path(args.csv).expanduser().resolve())
+    lc_dir = str(Path(args.lc_dir).expanduser().resolve())
+    for phase in ("lossless", "two-part"):
+        print(f"Starting {phase} tests", flush=True)
+        for index, inp in enumerate(inputs, 1):
+            print(f"[{phase} {index}/{len(inputs)}] {inp}", flush=True)
+            if phase == "lossless":
+                command = [
+                    sys.executable, str(PROJECT / "lc_lossless_compress.py"), str(inp),
+                    "--lc-dir", lc_dir, "--csv", common_csv,
+                ]
+            else:
+                command = [
+                    sys.executable, str(PROJECT / "lc_two_part_compress.py"), str(inp),
+                    "--lc-dir", lc_dir, "--lossless-csv", common_csv,
+                    "--lossy-preprocessor", "QUANT_IABS_0_f32",
+                    "--lossy-pattern", ".+ .+ R.+|C.+|H.+",
+                    "--lossless-pattern", ".+ .+ R.+|C.+|H.+",
+                    "--epsilon-points", "5",
+                ]
+            print(shlex.join(command), flush=True)
+            if not args.dry_run:
+                subprocess.run(command, cwd=PROJECT, check=True)
+    return 0
+
+
+if __name__ == "__main__":
+    try:
+        raise SystemExit(main())
+    except subprocess.CalledProcessError as error:
+        print(f"Benchmark failed (exit {error.returncode}); stopping batch.", file=sys.stderr)
+        raise SystemExit(error.returncode)

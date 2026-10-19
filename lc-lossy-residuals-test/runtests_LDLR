@@ -1,0 +1,6 @@
+python3 lc_two_part_lossy_residual_compress.py $1 \
+  --lc-dir ~/Desktop/ECL-Projects/active-projects/LC-framework \
+	  --lossy-preprocessor "QUANT_IABS_0_f32" \
+  --lossy-pattern ".+ .+ R.+|C.+|H.+" \
+  --lossless-pattern ".+ .+ R.+|C.+|H.+" \
+  --performance

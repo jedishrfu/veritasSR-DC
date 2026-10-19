@@ -1,0 +1,23 @@
+#!/bin/bash
+
+plot=csvplot
+input_csv=$1
+
+eps=2
+cr=14
+psnr=11
+maxabserr=23
+
+$plot -i $input_csv --xcol eps --ycols CR --single-plot &
+$plot -i $input_csv --xcol eps --ycols MaxAbsErr --single-plot &
+#$plot -i $input_csv --xcol eps --ycols $validsamples --single-plot &
+$plot -i $input_csv -lx --xcol CR --ycols psnr_db --single-plot --scatterplot &
+exit
+
+$plot -i $input_csv --xcol 6 --ycols 7 --single-plot
+$plot -i $input_csv --xcol 6 --ycols 8 --single-plot
+$plot -i $input_csv --xcol 6 --ycols 9 --single-plot
+
+$plot -i $input_csv --xcol 6 --ycols 7 --single-plot
+$plot -i $input_csv --xcol 6 --ycols 8 --single-plot
+$plot -i $input_csv --xcol 6 --ycols 9 --single-plot
